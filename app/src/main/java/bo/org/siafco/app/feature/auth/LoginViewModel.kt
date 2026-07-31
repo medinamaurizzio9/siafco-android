@@ -3,7 +3,7 @@ package bo.org.siafco.app.feature.auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import bo.org.siafco.app.core.network.ApiResult
-import bo.org.siafco.app.data.repository.AuthRepository
+import bo.org.siafco.app.data.repository.AuthGateway
 import bo.org.siafco.app.domain.SessionProfile
 import bo.org.siafco.app.feature.UiMessage
 import bo.org.siafco.app.feature.toUiMessage
@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
+class LoginViewModel(private val authRepository: AuthGateway) : ViewModel() {
     private val _state = MutableStateFlow(LoginUiState())
     val state: StateFlow<LoginUiState> = _state.asStateFlow()
 

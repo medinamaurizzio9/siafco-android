@@ -12,12 +12,16 @@ import bo.org.siafco.app.feature.auth.LoginScreen
 import bo.org.siafco.app.feature.auth.LoginViewModel
 import bo.org.siafco.app.feature.home.HomeScreen
 import bo.org.siafco.app.feature.home.HomeViewModel
+import bo.org.siafco.app.feature.register.RegisterAffiliationScreen
+import bo.org.siafco.app.feature.register.RegisterAffiliationViewModel
 import bo.org.siafco.app.feature.splash.SplashScreen
 import bo.org.siafco.app.feature.splash.SplashViewModel
 
 @Composable
 fun SiafcoAppRoot(container: AppContainer, navController: NavHostController = rememberNavController()) {
-    val factory = remember(container) { SiafcoViewModelFactory(container.authRepository) }
+    val factory = remember(container) {
+        SiafcoViewModelFactory(container.authRepository, container.affiliationRepository)
+    }
 
     NavHost(navController = navController, startDestination = Routes.Splash) {
         composable<Routes.Splash> {
@@ -43,6 +47,25 @@ fun SiafcoAppRoot(container: AppContainer, navController: NavHostController = re
                 onLoginSuccess = {
                     navController.navigate(Routes.Home) {
                         popUpTo<Routes.Login> { inclusive = true }
+                    }
+                },
+                onRegister = {
+                    navController.navigate(Routes.RegisterAffiliation)
+                }
+            )
+        }
+        composable<Routes.RegisterAffiliation> {
+            val viewModel: RegisterAffiliationViewModel = viewModel(factory = factory)
+            RegisterAffiliationScreen(
+                viewModel = viewModel,
+                onCompleted = {
+                    navController.navigate(Routes.Home) {
+                        popUpTo<Routes.RegisterAffiliation> { inclusive = true }
+                    }
+                },
+                onBackToLogin = {
+                    navController.navigate(Routes.Login) {
+                        popUpTo<Routes.RegisterAffiliation> { inclusive = true }
                     }
                 }
             )

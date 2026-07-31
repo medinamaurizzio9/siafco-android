@@ -5,6 +5,7 @@ import bo.org.siafco.app.core.data.TokenStore
 import bo.org.siafco.app.core.data.SecureTokenStore
 import bo.org.siafco.app.core.crypto.AndroidKeyStoreTokenCipher
 import bo.org.siafco.app.core.network.NetworkModule
+import bo.org.siafco.app.data.repository.AffiliationRepository
 import bo.org.siafco.app.data.repository.AuthRepository
 
 class SiafcoApp : Application() {
@@ -17,10 +18,15 @@ class SiafcoApp : Application() {
             context = this,
             cipher = AndroidKeyStoreTokenCipher()
         )
+        val api = NetworkModule.createApi(tokenStore)
         container = AppContainer(
             tokenStore = tokenStore,
             authRepository = AuthRepository(
-                api = NetworkModule.createApi(tokenStore),
+                api = api,
+                tokenStore = tokenStore
+            ),
+            affiliationRepository = AffiliationRepository(
+                api = api,
                 tokenStore = tokenStore
             )
         )
@@ -29,5 +35,6 @@ class SiafcoApp : Application() {
 
 data class AppContainer(
     val tokenStore: TokenStore,
-    val authRepository: AuthRepository
+    val authRepository: AuthRepository,
+    val affiliationRepository: AffiliationRepository
 )
