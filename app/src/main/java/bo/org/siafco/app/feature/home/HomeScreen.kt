@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -26,6 +28,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import bo.org.siafco.app.R
 import bo.org.siafco.app.domain.AccessLevel
+import bo.org.siafco.app.domain.AffiliationRequestSummary
+import bo.org.siafco.app.feature.UiMessage
+import java.util.Locale
 
 @Composable
 fun HomeScreen(
@@ -42,6 +47,7 @@ fun HomeScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
@@ -81,12 +87,21 @@ fun HomeScreen(
                     state.message?.let {
                         Text(text = stringResource(it.resId), color = MaterialTheme.colorScheme.secondary)
                     }
+                    AffiliationRequestSection(
+                        request = state.affiliationRequest,
+                        loading = state.requestLoading,
+                        message = state.requestMessage,
+                        onRefresh = viewModel::refreshAffiliationRequest
+                    )
                     Spacer(Modifier.height(8.dp))
                     OutlinedButton(onClick = {}, modifier = Modifier.fillMaxWidth(), enabled = false) {
                         Text(stringResource(R.string.home_profile))
                     }
                     OutlinedButton(onClick = {}, modifier = Modifier.fillMaxWidth(), enabled = false) {
                         Text(stringResource(R.string.home_request))
+                    }
+                    OutlinedButton(onClick = {}, modifier = Modifier.fillMaxWidth(), enabled = false) {
+                        Text(stringResource(R.string.home_payment_coming))
                     }
                     Button(
                         onClick = viewModel::logout,
@@ -99,4 +114,60 @@ fun HomeScreen(
             }
         }
     }
+}
+
+@Composable
+private fun AffiliationRequestSection(
+    request: AffiliationRequestSummary?,
+    loading: Boolean,
+    message: UiMessage?,
+    onRefresh: () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = stringResource(R.string.home_request_title),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+        if (loading && request == null) {
+            CircularProgressIndicator()
+        }
+        request?.let {
+            Text(text = stringResource(R.string.home_request_code, it.requestCode))
+            Text(text = stringResource(R.string.home_request_status, it.statusLabel))
+            it.planName?.takeIf(String::isNotBlank)?.let { plan ->
+                Text(text = stringResource(R.string.home_request_plan, plan))
+            }
+            if (it.amountDue != null && !it.currency.isNullOrBlank()) {
+                Text(text = stringResource(R.string.home_request_amount, it.currency, formatAmount(it.amountDue)))
+            }
+            it.observations?.takeIf(String::isNotBlank)?.let { observations ->
+                Text(text = stringResource(R.string.home_request_observations, observations))
+            }
+            Text(
+                text = stringResource(
+                    R.string.home_request_payment,
+                    it.paymentStatusLabel ?: stringResource(R.string.home_request_payment_pending)
+                )
+            )
+            Text(text = stringResource(R.string.home_request_capabilities, capabilitiesText(it)))
+        }
+        message?.let {
+            Text(text = stringResource(it.resId), color = MaterialTheme.colorScheme.secondary)
+        }
+        OutlinedButton(onClick = onRefresh, modifier = Modifier.fillMaxWidth(), enabled = !loading) {
+            Text(stringResource(R.string.home_refresh_request))
+        }
+    }
+}
+
+private fun formatAmount(amount: Double): String = String.format(Locale.US, "%.2f", amount)
+
+private fun capabilitiesText(request: AffiliationRequestSummary): String {
+    val capabilities = buildList {
+        if (request.canSubmitPayment) add("registrar pago")
+        if (request.canLogin) add("iniciar sesion")
+        if (request.canViewCredential) add("ver credencial")
+    }
+    return capabilities.ifEmpty { listOf("sin acciones disponibles") }.joinToString()
 }

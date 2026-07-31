@@ -3,10 +3,12 @@ package bo.org.siafco.app.data.repository
 import bo.org.siafco.app.core.data.TokenStore
 import bo.org.siafco.app.core.network.ApiResult
 import bo.org.siafco.app.data.remote.ApiEnvelope
+import bo.org.siafco.app.data.remote.AffiliationRequestPayload
 import bo.org.siafco.app.data.remote.LoginRequest
 import bo.org.siafco.app.data.remote.ProfilePayload
 import bo.org.siafco.app.data.remote.SiafcoApi
 import bo.org.siafco.app.domain.AccessLevel
+import bo.org.siafco.app.domain.AffiliationRequestSummary
 import bo.org.siafco.app.domain.SessionProfile
 import kotlinx.coroutines.flow.Flow
 import retrofit2.Response
@@ -15,10 +17,10 @@ import java.io.IOException
 class AuthRepository(
     private val api: SiafcoApi,
     private val tokenStore: TokenStore
-) {
+) : AuthGateway {
     val token: Flow<String?> = tokenStore.token
 
-    suspend fun login(email: String, password: String): ApiResult<SessionProfile> = safeCall {
+    override suspend fun login(email: String, password: String): ApiResult<SessionProfile> = safeCall {
         val response = api.login(LoginRequest(email = email, password = password))
         if (response.isSuccessful) {
             val body = response.body()
@@ -34,7 +36,7 @@ class AuthRepository(
         }
     }
 
-    suspend fun validateSession(): ApiResult<SessionProfile> = safeCall {
+    override suspend fun validateSession(): ApiResult<SessionProfile> = safeCall {
         if (tokenStore.getToken().isNullOrBlank()) {
             return@safeCall ApiResult.HttpError(401, null)
         }
@@ -52,7 +54,21 @@ class AuthRepository(
         }
     }
 
-    suspend fun logout(): ApiResult<Unit> = safeCall {
+    override suspend fun affiliationRequest(): ApiResult<AffiliationRequestSummary> = safeCall {
+        val response = api.affiliationRequest()
+        if (response.isSuccessful) {
+            val request = response.body()?.data?.affiliationRequest
+            if (response.body()?.success == true && request?.requestCode != null) {
+                ApiResult.Success(request.toDomain())
+            } else {
+                ApiResult.UnknownError
+            }
+        } else {
+            response.toHttpError()
+        }
+    }
+
+    override suspend fun logout(): ApiResult<Unit> = safeCall {
         val response = api.logout()
         tokenStore.clearToken()
         if (response.isSuccessful) {
@@ -62,7 +78,7 @@ class AuthRepository(
         }
     }
 
-    suspend fun clearLocalSession() {
+    override suspend fun clearLocalSession() {
         tokenStore.clearToken()
     }
 
@@ -80,6 +96,24 @@ class AuthRepository(
         return ApiResult.HttpError(code = code(), message = message())
     }
 
+    private fun bo.org.siafco.app.data.remote.MobileAffiliationRequestDto.toDomain(): AffiliationRequestSummary {
+        return AffiliationRequestSummary(
+            requestCode = requestCode.orEmpty(),
+            status = status.orEmpty(),
+            statusLabel = statusLabel ?: status.orEmpty(),
+            statusDescription = statusDescription,
+            planName = plan?.name,
+            amountDue = amountDue,
+            currency = currency,
+            observations = observations,
+            paymentStatus = payment?.status,
+            paymentStatusLabel = payment?.statusLabel,
+            canSubmitPayment = capabilities?.canSubmitPayment == true,
+            canLogin = capabilities?.canLogin == true,
+            canViewCredential = capabilities?.canViewCredential == true
+        )
+    }
+
     private fun bo.org.siafco.app.data.remote.MobileProfileDto.toDomain(): SessionProfile {
         val status = affiliate?.status.orEmpty()
         return SessionProfile(
@@ -94,4 +128,12 @@ class AuthRepository(
             }
         )
     }
+}
+
+interface AuthGateway {
+    suspend fun login(email: String, password: String): ApiResult<SessionProfile>
+    suspend fun validateSession(): ApiResult<SessionProfile>
+    suspend fun affiliationRequest(): ApiResult<AffiliationRequestSummary>
+    suspend fun logout(): ApiResult<Unit>
+    suspend fun clearLocalSession()
 }

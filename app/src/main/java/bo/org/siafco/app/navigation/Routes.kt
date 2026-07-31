@@ -10,5 +10,8 @@ sealed interface Routes {
     data object Login : Routes
 
     @Serializable
+    data object RegisterAffiliation : Routes
+
+    @Serializable
     data object Home : Routes
 }

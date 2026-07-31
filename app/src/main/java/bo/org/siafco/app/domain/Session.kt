@@ -5,7 +5,8 @@ data class SessionProfile(
     val email: String,
     val affiliateStatus: String,
     val affiliateStatusLabel: String,
-    val accessLevel: AccessLevel
+    val accessLevel: AccessLevel,
+    val requestCode: String? = null
 )
 
 enum class AccessLevel {

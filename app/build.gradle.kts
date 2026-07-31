@@ -49,7 +49,7 @@ android {
             versionNameSuffix = "-debug"
             buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8000/api/mobile/v1/\"")
             buildConfigField("Boolean", "ENABLE_NETWORK_LOGGING", "true")
-            manifestPlaceholders["usesCleartextTraffic"] = "true"
+            manifestPlaceholders["usesCleartextTraffic"] = "false"
         }
         release {
             isMinifyEnabled = false
@@ -98,6 +98,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.exifinterface)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.retrofit)

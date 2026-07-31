@@ -21,9 +21,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -37,10 +34,10 @@ import bo.org.siafco.app.R
 @Composable
 fun LoginScreen(
     viewModel: LoginViewModel,
-    onLoginSuccess: () -> Unit
+    onLoginSuccess: () -> Unit,
+    onRegister: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
-    var showRegisterNotice by remember { mutableStateOf(false) }
     LaunchedEffect(state.authenticated) {
         if (state.authenticated) onLoginSuccess()
     }
@@ -113,13 +110,6 @@ fun LoginScreen(
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
-                    if (showRegisterNotice) {
-                        Text(
-                            text = stringResource(R.string.register_pending_message),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.secondary
-                        )
-                    }
                     Button(
                         onClick = viewModel::login,
                         enabled = !state.loading,
@@ -128,7 +118,7 @@ fun LoginScreen(
                         Text(stringResource(R.string.login_submit))
                     }
                     OutlinedButton(
-                        onClick = { showRegisterNotice = true },
+                        onClick = onRegister,
                         enabled = !state.loading,
                         modifier = Modifier.fillMaxWidth()
                     ) {

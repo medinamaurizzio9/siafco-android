@@ -119,6 +119,54 @@ class AuthRepositoryTest {
         assertNull(tokenStore.getToken())
     }
 
+    @Test
+    fun affiliationRequestMapsRealContractWithoutInternalIds() = runTest {
+        server.enqueue(jsonResponse(AFFILIATION_REQUEST_JSON))
+
+        val result = repository.affiliationRequest()
+
+        assertTrue(result is ApiResult.Success)
+        val request = (result as ApiResult.Success).value
+        assertEquals("SOL-TEST-0001", request.requestCode)
+        assertEquals("pending_payment", request.status)
+        assertEquals("Pendiente de pago", request.statusLabel)
+        assertEquals("AFILIACION INICIAL", request.planName)
+        assertEquals(250.0, request.amountDue!!, 0.0)
+        assertTrue(request.canSubmitPayment)
+        assertTrue(request.canLogin)
+    }
+
+    @Test
+    fun affiliationRequestNotFoundIsReported() = runTest {
+        server.enqueue(jsonResponse(errorJson(), code = 404))
+
+        val result = repository.affiliationRequest()
+
+        assertEquals(404, (result as ApiResult.HttpError).code)
+    }
+
+    @Test
+    fun affiliationRequestUnauthorizedDoesNotClearTokenLocally() = runTest {
+        tokenStore.saveToken("still-local")
+        server.enqueue(jsonResponse(errorJson(), code = 401))
+
+        val result = repository.affiliationRequest()
+
+        assertEquals(401, (result as ApiResult.HttpError).code)
+        assertEquals("still-local", tokenStore.getToken())
+    }
+
+    @Test
+    fun affiliationRequestNetworkErrorDoesNotClearToken() = runTest {
+        tokenStore.saveToken("still-local")
+        server.close()
+
+        val result = repository.affiliationRequest()
+
+        assertTrue(result is ApiResult.NetworkError)
+        assertEquals("still-local", tokenStore.getToken())
+    }
+
     private fun api(server: MockWebServer): SiafcoApi {
         val json = Json { ignoreUnknownKeys = true }
         return Retrofit.Builder()
@@ -171,6 +219,46 @@ class AuthRepositoryTest {
     """.trimIndent()
 
     private fun errorJson() = """{"success":false,"message":"Error","errors":{}}"""
+
+    private companion object {
+        private const val AFFILIATION_REQUEST_JSON = """
+            {
+              "success": true,
+              "message": "OK",
+              "data": {
+                "affiliation_request": {
+                  "request_code": "SOL-TEST-0001",
+                  "status": "pending_payment",
+                  "status_label": "Pendiente de pago",
+                  "status_description": "Tu solicitud fue registrada correctamente.",
+                  "observations": null,
+                  "amount_due": 250,
+                  "currency": "BOB",
+                  "plan": {
+                    "name": "AFILIACION INICIAL",
+                    "type": "independiente",
+                    "affiliation_fee": 250,
+                    "credential_fee": 0,
+                    "total_amount": 250,
+                    "payment_instructions": null
+                  },
+                  "payment": null,
+                  "payment_instructions": {
+                    "bank": null,
+                    "holder": null,
+                    "account": null,
+                    "instructions": null
+                  },
+                  "capabilities": {
+                    "can_submit_payment": true,
+                    "can_login": true,
+                    "can_view_credential": false
+                  }
+                }
+              }
+            }
+        """
+    }
 
     private class MemoryTokenStore : TokenStore {
         private val state = MutableStateFlow<String?>(null)

@@ -11,6 +11,7 @@ enum class UiMessage(@param:StringRes val resId: Int) {
     RateLimited(R.string.error_rate_limited),
     Network(R.string.error_network),
     Unknown(R.string.error_unknown),
+    RequestNotFound(R.string.error_request_not_found),
     LogoutLocalSuccess(R.string.logout_local_success),
     LogoutRemoteFailed(R.string.logout_remote_failed)
 }
