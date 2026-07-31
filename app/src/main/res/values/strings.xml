@@ -1,0 +1,31 @@
+<resources>
+    <string name="app_name">SIAFCO</string>
+    <string name="splash_loading">Cargando sesión&#8230;</string>
+    <string name="splash_title">SIAFCO</string>
+    <string name="splash_subtitle">Afiliados</string>
+    <string name="login_title">Iniciar sesión</string>
+    <string name="login_email">Correo electrónico</string>
+    <string name="login_password">Contraseña</string>
+    <string name="login_submit">Iniciar sesión</string>
+    <string name="login_register">Solicitar afiliación</string>
+    <string name="login_show_password">Mostrar contraseña</string>
+    <string name="login_hide_password">Ocultar contraseña</string>
+    <string name="login_email_required">Ingresa tu correo electrónico.</string>
+    <string name="login_email_invalid">Ingresa un correo válido.</string>
+    <string name="login_password_required">Ingresa tu contraseña.</string>
+    <string name="error_unauthorized">Correo o contraseña incorrectos.</string>
+    <string name="error_forbidden">Tu afiliación no tiene acceso móvil habilitado.</string>
+    <string name="error_validation">Revisa los datos ingresados.</string>
+    <string name="error_rate_limited">Demasiados intentos. Intenta nuevamente más tarde.</string>
+    <string name="error_network">No hay conexión con SIAFCO. Verifica internet o que el backend esté iniciado.</string>
+    <string name="error_unknown">No pudimos completar la operación.</string>
+    <string name="home_greeting">Bienvenida</string>
+    <string name="home_status_pending">Acceso pendiente</string>
+    <string name="home_status_active">Acceso activo</string>
+    <string name="home_profile">Perfil</string>
+    <string name="home_request">Mi solicitud</string>
+    <string name="home_logout">Cerrar sesión</string>
+    <string name="logout_local_success">Sesión cerrada en este dispositivo.</string>
+    <string name="logout_remote_failed">No se pudo avisar al servidor, pero la sesión local fue cerrada.</string>
+    <string name="register_pending_message">El formulario de afiliación móvil se implementará en la siguiente fase.</string>
+</resources>
