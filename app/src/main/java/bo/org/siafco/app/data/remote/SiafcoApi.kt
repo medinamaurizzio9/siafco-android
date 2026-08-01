@@ -3,6 +3,7 @@ package bo.org.siafco.app.data.remote
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
@@ -28,6 +29,13 @@ interface SiafcoApi {
 
     @GET("me/affiliation-request")
     suspend fun affiliationRequest(): Response<ApiEnvelope<AffiliationRequestPayload>>
+
+    @Multipart
+    @POST("me/affiliation-request/payment")
+    suspend fun submitAffiliationPayment(
+        @Header("Idempotency-Key") idempotencyKey: String,
+        @Part parts: List<MultipartBody.Part>
+    ): Response<ApiEnvelope<PaymentSubmissionPayload>>
 
     @POST("auth/logout")
     suspend fun logout(): Response<ApiEnvelope<EmptyPayload>>

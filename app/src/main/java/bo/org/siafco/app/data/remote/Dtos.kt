@@ -47,6 +47,12 @@ data class AffiliationRequestPayload(
 )
 
 @Serializable
+data class PaymentSubmissionPayload(
+    val idempotent: Boolean? = null,
+    @SerialName("affiliation_request") val affiliationRequest: MobileAffiliationRequestDto? = null
+)
+
+@Serializable
 data class MobileAffiliationRequestDto(
     @SerialName("request_code") val requestCode: String? = null,
     val status: String? = null,
@@ -74,7 +80,13 @@ data class MobileAffiliationRequestPlanDto(
 @Serializable
 data class MobileAffiliationPaymentDto(
     val status: String? = null,
-    @SerialName("status_label") val statusLabel: String? = null
+    @SerialName("status_label") val statusLabel: String? = null,
+    @SerialName("transaction_number") val transactionNumber: String? = null,
+    @SerialName("payment_date") val paymentDate: String? = null,
+    @SerialName("paid_amount") val paidAmount: Double? = null,
+    @SerialName("submitted_at") val submittedAt: String? = null,
+    @SerialName("rejection_reason") val rejectionReason: String? = null,
+    @SerialName("has_receipt") val hasReceipt: Boolean? = null
 )
 
 @Serializable

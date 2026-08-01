@@ -29,12 +29,15 @@ import androidx.compose.ui.unit.dp
 import bo.org.siafco.app.R
 import bo.org.siafco.app.domain.AccessLevel
 import bo.org.siafco.app.domain.AffiliationRequestSummary
+import bo.org.siafco.app.domain.canStartPaymentSubmission
+import bo.org.siafco.app.domain.paymentDisabledReason
 import bo.org.siafco.app.feature.UiMessage
 import java.util.Locale
 
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
+    onSubmitPayment: () -> Unit,
     onLoggedOut: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
@@ -100,8 +103,16 @@ fun HomeScreen(
                     OutlinedButton(onClick = {}, modifier = Modifier.fillMaxWidth(), enabled = false) {
                         Text(stringResource(R.string.home_request))
                     }
-                    OutlinedButton(onClick = {}, modifier = Modifier.fillMaxWidth(), enabled = false) {
-                        Text(stringResource(R.string.home_payment_coming))
+                    val paymentEnabled = state.affiliationRequest?.canStartPaymentSubmission() == true
+                    OutlinedButton(
+                        onClick = onSubmitPayment,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = paymentEnabled
+                    ) {
+                        Text(stringResource(R.string.home_payment_submit))
+                    }
+                    state.affiliationRequest?.paymentDisabledReason()?.let {
+                        Text(text = it, color = MaterialTheme.colorScheme.secondary)
                     }
                     Button(
                         onClick = viewModel::logout,
