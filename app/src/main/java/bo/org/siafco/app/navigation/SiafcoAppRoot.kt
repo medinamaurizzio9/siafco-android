@@ -12,6 +12,8 @@ import bo.org.siafco.app.feature.auth.LoginScreen
 import bo.org.siafco.app.feature.auth.LoginViewModel
 import bo.org.siafco.app.feature.home.HomeScreen
 import bo.org.siafco.app.feature.home.HomeViewModel
+import bo.org.siafco.app.feature.payment.PaymentScreen
+import bo.org.siafco.app.feature.payment.PaymentViewModel
 import bo.org.siafco.app.feature.register.RegisterAffiliationScreen
 import bo.org.siafco.app.feature.register.RegisterAffiliationViewModel
 import bo.org.siafco.app.feature.splash.SplashScreen
@@ -20,7 +22,12 @@ import bo.org.siafco.app.feature.splash.SplashViewModel
 @Composable
 fun SiafcoAppRoot(container: AppContainer, navController: NavHostController = rememberNavController()) {
     val factory = remember(container) {
-        SiafcoViewModelFactory(container.authRepository, container.affiliationRepository)
+        SiafcoViewModelFactory(
+            container.authRepository,
+            container.affiliationRepository,
+            container.paymentRepository,
+            container.pendingPaymentStore
+        )
     }
 
     NavHost(navController = navController, startDestination = Routes.Splash) {
@@ -74,6 +81,26 @@ fun SiafcoAppRoot(container: AppContainer, navController: NavHostController = re
             val viewModel: HomeViewModel = viewModel(factory = factory)
             HomeScreen(
                 viewModel = viewModel,
+                onSubmitPayment = {
+                    navController.navigate(Routes.Payment)
+                },
+                onLoggedOut = {
+                    navController.navigate(Routes.Login) {
+                        popUpTo<Routes.Home> { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable<Routes.Payment> {
+            val viewModel: PaymentViewModel = viewModel(factory = factory)
+            PaymentScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() },
+                onSubmitted = {
+                    navController.navigate(Routes.Home) {
+                        popUpTo<Routes.Home> { inclusive = true }
+                    }
+                },
                 onLoggedOut = {
                     navController.navigate(Routes.Login) {
                         popUpTo<Routes.Home> { inclusive = true }

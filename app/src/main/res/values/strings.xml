@@ -35,7 +35,7 @@
     <string name="home_refresh_request">Actualizar</string>
     <string name="home_profile">Perfil</string>
     <string name="home_request">Mi solicitud</string>
-    <string name="home_payment_coming">Enviar comprobante (próximamente)</string>
+    <string name="home_payment_submit">Enviar comprobante</string>
     <string name="home_logout">Cerrar sesión</string>
     <string name="logout_local_success">Sesión cerrada en este dispositivo.</string>
     <string name="logout_remote_failed">No se pudo avisar al servidor, pero la sesión local fue cerrada.</string>
@@ -74,4 +74,24 @@
     <string name="register_next">Siguiente</string>
     <string name="register_submit">Enviar solicitud</string>
     <string name="register_go_login">Ir a iniciar sesión</string>
+    <string name="payment_title">Enviar comprobante de pago</string>
+    <string name="payment_bank">Banco</string>
+    <string name="payment_holder">Titular</string>
+    <string name="payment_account">Cuenta</string>
+    <string name="payment_instructions">Instrucciones: %1$s</string>
+    <string name="payment_transaction_number">Número de transacción</string>
+    <string name="payment_date">Fecha de pago (AAAA-MM-DD)</string>
+    <string name="payment_pick_date">Fecha</string>
+    <string name="payment_amount">Monto pagado</string>
+    <string name="payment_payer">Nombre de quien pagó</string>
+    <string name="payment_bank_name">Banco de origen</string>
+    <string name="payment_pick_receipt">Seleccionar comprobante</string>
+    <string name="payment_receipt_preview">Vista previa del comprobante</string>
+    <string name="payment_summary">Resumen antes de enviar</string>
+    <string name="payment_summary_amount">Monto: %1$s</string>
+    <string name="payment_summary_receipt">Comprobante: %1$s</string>
+    <string name="payment_submit">Enviar pago</string>
+    <string name="payment_retry_same">Reintentar el mismo envío</string>
+    <string name="payment_submitted">Pago enviado para revisión.</string>
+    <string name="payment_back_home">Volver a inicio</string>
 </resources>

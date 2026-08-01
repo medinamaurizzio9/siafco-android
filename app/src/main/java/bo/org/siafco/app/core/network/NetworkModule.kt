@@ -38,6 +38,7 @@ object NetworkModule {
             clientBuilder.addInterceptor(
                 HttpLoggingInterceptor().apply {
                     redactHeader("Authorization")
+                    redactHeader("Idempotency-Key")
                     redactHeader("Cookie")
                     redactHeader("Set-Cookie")
                     level = HttpLoggingInterceptor.Level.HEADERS
