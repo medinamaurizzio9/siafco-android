@@ -48,6 +48,7 @@ class AuthRepositoryTest {
         assertTrue(result is ApiResult.Success)
         assertEquals("token-123", tokenStore.getToken())
         assertEquals(AccessLevel.Pending, (result as ApiResult.Success).value.accessLevel)
+        assertEquals(setOf("phone", "email"), result.value.allowedProfileFields)
     }
 
     @Test
@@ -57,6 +58,7 @@ class AuthRepositoryTest {
         val result = repository.login("ana@example.test", "Secret1234")
 
         assertEquals(AccessLevel.Active, (result as ApiResult.Success).value.accessLevel)
+        assertTrue(result.value.hasAffiliateProfile)
     }
 
     @Test
@@ -214,7 +216,8 @@ class AuthRepositoryTest {
             "status":"$status",
             "status_label":"$status",
             "access_level":"$accessLevel"
-          }
+          },
+          "allowed_profile_fields":["phone","email"]
         }
     """.trimIndent()
 

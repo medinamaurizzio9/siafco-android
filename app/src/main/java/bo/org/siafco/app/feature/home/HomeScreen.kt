@@ -27,9 +27,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import bo.org.siafco.app.R
+import bo.org.siafco.app.core.debug.MobileDiagnostics
 import bo.org.siafco.app.domain.AccessLevel
 import bo.org.siafco.app.domain.AffiliationRequestSummary
-import bo.org.siafco.app.domain.canStartPaymentSubmission
 import bo.org.siafco.app.domain.paymentDisabledReason
 import bo.org.siafco.app.feature.UiMessage
 import java.util.Locale
@@ -45,6 +45,13 @@ fun HomeScreen(
     LaunchedEffect(Unit) { viewModel.load() }
     LaunchedEffect(state.loggedOut) {
         if (state.loggedOut) onLoggedOut()
+    }
+    LaunchedEffect(state.profile, state.affiliationRequest, state.capabilities) {
+        val capabilities = state.capabilities
+        MobileDiagnostics.home(
+            "HomeScreen.enabled",
+            "allowed_profile_fields=${state.profile?.allowedProfileFields.orEmpty()} access_level=${state.profile?.accessLevel} status=${state.profile?.affiliateStatus.orEmpty()} payment_status=${state.affiliationRequest?.paymentStatus.orEmpty()} canViewProfile=${capabilities.canViewProfile} canEditProfile=${capabilities.canEditProfile} canViewRequest=${capabilities.canViewAffiliationRequest} canSubmitPayment=${capabilities.canSubmitPayment} canViewCredential=${capabilities.canViewCredential}"
+        )
     }
 
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -98,17 +105,24 @@ fun HomeScreen(
                         onRefresh = viewModel::refreshAffiliationRequest
                     )
                     Spacer(Modifier.height(8.dp))
-                    OutlinedButton(onClick = onOpenProfile, modifier = Modifier.fillMaxWidth()) {
+                    OutlinedButton(
+                        onClick = onOpenProfile,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = state.capabilities.canViewProfile
+                    ) {
                         Text(stringResource(R.string.home_profile))
                     }
-                    OutlinedButton(onClick = {}, modifier = Modifier.fillMaxWidth(), enabled = false) {
+                    OutlinedButton(
+                        onClick = {},
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = state.capabilities.canViewAffiliationRequest
+                    ) {
                         Text(stringResource(R.string.home_request))
                     }
-                    val paymentEnabled = state.affiliationRequest?.canStartPaymentSubmission() == true
                     OutlinedButton(
                         onClick = onSubmitPayment,
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = paymentEnabled
+                        enabled = state.capabilities.canSubmitPayment
                     ) {
                         Text(stringResource(R.string.home_payment_submit))
                     }

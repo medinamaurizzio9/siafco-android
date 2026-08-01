@@ -6,6 +6,8 @@ data class SessionProfile(
     val affiliateStatus: String,
     val affiliateStatusLabel: String,
     val accessLevel: AccessLevel,
+    val hasAffiliateProfile: Boolean = false,
+    val allowedProfileFields: Set<String> = emptySet(),
     val requestCode: String? = null
 )
 
@@ -13,3 +15,11 @@ enum class AccessLevel {
     Pending,
     Active
 }
+
+data class AffiliateCapabilities(
+    val canViewProfile: Boolean,
+    val canEditProfile: Boolean,
+    val canViewAffiliationRequest: Boolean,
+    val canSubmitPayment: Boolean,
+    val canViewCredential: Boolean
+)

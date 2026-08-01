@@ -1,13 +1,13 @@
 package bo.org.siafco.app.data.repository
 
 import bo.org.siafco.app.core.data.TokenStore
+import bo.org.siafco.app.core.debug.MobileDiagnostics
 import bo.org.siafco.app.core.network.ApiResult
 import bo.org.siafco.app.data.remote.ApiEnvelope
 import bo.org.siafco.app.data.remote.AffiliationRequestPayload
 import bo.org.siafco.app.data.remote.LoginRequest
 import bo.org.siafco.app.data.remote.ProfilePayload
 import bo.org.siafco.app.data.remote.SiafcoApi
-import bo.org.siafco.app.domain.AccessLevel
 import bo.org.siafco.app.domain.AffiliationRequestSummary
 import bo.org.siafco.app.domain.SessionProfile
 import kotlinx.coroutines.flow.Flow
@@ -27,7 +27,7 @@ class AuthRepository(
             val payload = body?.data
             if (body?.success == true && payload != null) {
                 tokenStore.saveToken(payload.accessToken)
-                ApiResult.Success(payload.profile.toDomain())
+                ApiResult.Success(payload.profile.toSessionProfile("login"))
             } else {
                 ApiResult.UnknownError
             }
@@ -44,7 +44,7 @@ class AuthRepository(
         if (response.isSuccessful) {
             val payload = response.body()?.data
             if (response.body()?.success == true && payload != null) {
-                ApiResult.Success(payload.profile.toDomain())
+                ApiResult.Success(payload.profile.toSessionProfile("me"))
             } else {
                 ApiResult.UnknownError
             }
@@ -58,8 +58,17 @@ class AuthRepository(
         val response = api.affiliationRequest()
         if (response.isSuccessful) {
             val request = response.body()?.data?.affiliationRequest
+            MobileDiagnostics.home(
+                "affiliation-request.dto",
+                "status=${request?.status.orEmpty()} payment_status=${request?.payment?.status.orEmpty()} canSubmitPayment=${request?.capabilities?.canSubmitPayment == true} canViewCredential=${request?.capabilities?.canViewCredential == true}"
+            )
             if (response.body()?.success == true && request?.requestCode != null) {
-                ApiResult.Success(request.toDomain())
+                val mapped = request.toDomain()
+                MobileDiagnostics.home(
+                    "affiliation-request.mapper",
+                    "status=${mapped.status} payment_status=${mapped.paymentStatus.orEmpty()} canSubmitPayment=${mapped.canSubmitPayment} canViewCredential=${mapped.canViewCredential}"
+                )
+                ApiResult.Success(mapped)
             } else {
                 ApiResult.UnknownError
             }
@@ -123,21 +132,6 @@ class AuthRepository(
             canSubmitPayment = capabilities?.canSubmitPayment == true,
             canLogin = capabilities?.canLogin == true,
             canViewCredential = capabilities?.canViewCredential == true
-        )
-    }
-
-    private fun bo.org.siafco.app.data.remote.MobileProfileDto.toDomain(): SessionProfile {
-        val status = affiliate?.status.orEmpty()
-        return SessionProfile(
-            name = affiliate?.fullName ?: user.name,
-            email = user.email,
-            affiliateStatus = status,
-            affiliateStatusLabel = affiliate?.statusLabel ?: status.ifBlank { "Sin estado" },
-            accessLevel = if (status == "activo" || affiliate?.accessLevel == "full") {
-                AccessLevel.Active
-            } else {
-                AccessLevel.Pending
-            }
         )
     }
 }
