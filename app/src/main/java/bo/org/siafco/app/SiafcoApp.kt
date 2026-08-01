@@ -9,6 +9,7 @@ import bo.org.siafco.app.data.payment.EncryptedPendingPaymentStore
 import bo.org.siafco.app.data.repository.AffiliationRepository
 import bo.org.siafco.app.data.repository.AuthRepository
 import bo.org.siafco.app.data.repository.PaymentRepository
+import bo.org.siafco.app.data.repository.ProfileRepository
 
 class SiafcoApp : Application() {
     lateinit var container: AppContainer
@@ -22,6 +23,7 @@ class SiafcoApp : Application() {
         )
         val api = NetworkModule.createApi(tokenStore)
         val paymentRepository = PaymentRepository(api)
+        val profileRepository = ProfileRepository(api, tokenStore)
         container = AppContainer(
             tokenStore = tokenStore,
             authRepository = AuthRepository(
@@ -33,6 +35,7 @@ class SiafcoApp : Application() {
                 tokenStore = tokenStore
             ),
             paymentRepository = paymentRepository,
+            profileRepository = profileRepository,
             pendingPaymentStore = EncryptedPendingPaymentStore(this)
         )
     }
@@ -43,5 +46,6 @@ data class AppContainer(
     val authRepository: AuthRepository,
     val affiliationRepository: AffiliationRepository,
     val paymentRepository: PaymentRepository,
+    val profileRepository: ProfileRepository,
     val pendingPaymentStore: bo.org.siafco.app.data.payment.PendingPaymentStore
 )

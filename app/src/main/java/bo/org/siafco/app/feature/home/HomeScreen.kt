@@ -37,6 +37,7 @@ import java.util.Locale
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
+    onOpenProfile: () -> Unit,
     onSubmitPayment: () -> Unit,
     onLoggedOut: () -> Unit
 ) {
@@ -97,7 +98,7 @@ fun HomeScreen(
                         onRefresh = viewModel::refreshAffiliationRequest
                     )
                     Spacer(Modifier.height(8.dp))
-                    OutlinedButton(onClick = {}, modifier = Modifier.fillMaxWidth(), enabled = false) {
+                    OutlinedButton(onClick = onOpenProfile, modifier = Modifier.fillMaxWidth()) {
                         Text(stringResource(R.string.home_profile))
                     }
                     OutlinedButton(onClick = {}, modifier = Modifier.fillMaxWidth(), enabled = false) {

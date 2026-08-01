@@ -94,4 +94,20 @@
     <string name="payment_retry_same">Reintentar el mismo envío</string>
     <string name="payment_submitted">Pago enviado para revisión.</string>
     <string name="payment_back_home">Volver a inicio</string>
+    <string name="profile_title">Mi perfil</string>
+    <string name="profile_confirm_email">Vas a cambiar el correo de acceso. Confirma para continuar.</string>
+    <string name="profile_confirm_password">Confirma el cambio de contrase&#241;a.</string>
+    <string name="profile_confirm_logout_all">Se cerrar&#225;n todas tus sesiones m&#243;viles. Confirma para continuar.</string>
+    <string name="profile_confirm">Confirmar</string>
+    <string name="profile_save">Guardar perfil</string>
+    <string name="profile_readonly">Datos protegidos</string>
+    <string name="profile_editable">Datos editables</string>
+    <string name="profile_photo">Fotograf&#237;a</string>
+    <string name="profile_upload_photo">Subir fotograf&#237;a</string>
+    <string name="profile_security">Seguridad de cuenta</string>
+    <string name="profile_password_help">La contrase&#241;a debe tener al menos 8 caracteres, letras y n&#250;meros.</string>
+    <string name="profile_current_password">Contrase&#241;a actual</string>
+    <string name="profile_new_password">Nueva contrase&#241;a</string>
+    <string name="profile_change_password">Cambiar contrase&#241;a</string>
+    <string name="profile_logout_all">Cerrar sesiones en todos los dispositivos</string>
 </resources>

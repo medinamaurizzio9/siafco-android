@@ -14,6 +14,8 @@ import bo.org.siafco.app.feature.home.HomeScreen
 import bo.org.siafco.app.feature.home.HomeViewModel
 import bo.org.siafco.app.feature.payment.PaymentScreen
 import bo.org.siafco.app.feature.payment.PaymentViewModel
+import bo.org.siafco.app.feature.profile.ProfileScreen
+import bo.org.siafco.app.feature.profile.ProfileViewModel
 import bo.org.siafco.app.feature.register.RegisterAffiliationScreen
 import bo.org.siafco.app.feature.register.RegisterAffiliationViewModel
 import bo.org.siafco.app.feature.splash.SplashScreen
@@ -26,6 +28,7 @@ fun SiafcoAppRoot(container: AppContainer, navController: NavHostController = re
             container.authRepository,
             container.affiliationRepository,
             container.paymentRepository,
+            container.profileRepository,
             container.pendingPaymentStore
         )
     }
@@ -81,9 +84,24 @@ fun SiafcoAppRoot(container: AppContainer, navController: NavHostController = re
             val viewModel: HomeViewModel = viewModel(factory = factory)
             HomeScreen(
                 viewModel = viewModel,
+                onOpenProfile = {
+                    navController.navigate(Routes.Profile)
+                },
                 onSubmitPayment = {
                     navController.navigate(Routes.Payment)
                 },
+                onLoggedOut = {
+                    navController.navigate(Routes.Login) {
+                        popUpTo<Routes.Home> { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable<Routes.Profile> {
+            val viewModel: ProfileViewModel = viewModel(factory = factory)
+            ProfileScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() },
                 onLoggedOut = {
                     navController.navigate(Routes.Login) {
                         popUpTo<Routes.Home> { inclusive = true }

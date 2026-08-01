@@ -110,6 +110,22 @@ data class ProfilePayload(
 )
 
 @Serializable
+data class UpdateProfileRequest(
+    val phone: String? = null,
+    val email: String? = null,
+    val address: String? = null,
+    @SerialName("birth_date") val birthDate: String? = null,
+    @SerialName("marital_status") val maritalStatus: String? = null
+)
+
+@Serializable
+data class UpdatePasswordRequest(
+    @SerialName("current_password") val currentPassword: String,
+    val password: String,
+    @SerialName("password_confirmation") val passwordConfirmation: String
+)
+
+@Serializable
 data class CatalogsPayload(
     val sectors: List<SectorDto>,
     val plans: List<AffiliationPlanDto>,
@@ -168,19 +184,54 @@ class EmptyPayload
 @Serializable
 data class MobileProfileDto(
     val user: UserDto,
-    val affiliate: AffiliateDto? = null
+    val affiliate: AffiliateDto? = null,
+    @SerialName("allowed_profile_fields") val allowedProfileFields: List<String> = emptyList()
 )
 
 @Serializable
 data class UserDto(
     val name: String,
-    val email: String
+    val email: String,
+    val role: String? = null,
+    @SerialName("user_type") val userType: String? = null,
+    @SerialName("must_change_password") val mustChangePassword: Boolean? = null,
+    @SerialName("is_active") val isActive: Boolean? = null,
+    @SerialName("last_login_at") val lastLoginAt: String? = null
 )
 
 @Serializable
 data class AffiliateDto(
     @SerialName("full_name") val fullName: String? = null,
+    val ci: String? = null,
+    val phone: String? = null,
+    val email: String? = null,
+    val address: String? = null,
+    @SerialName("birth_date") val birthDate: String? = null,
+    @SerialName("marital_status") val maritalStatus: String? = null,
+    @SerialName("photo_url") val photoUrl: String? = null,
+    @SerialName("registration_number") val registrationNumber: String? = null,
     val status: String? = null,
     @SerialName("status_label") val statusLabel: String? = null,
-    @SerialName("access_level") val accessLevel: String? = null
+    @SerialName("status_description") val statusDescription: String? = null,
+    @SerialName("access_level") val accessLevel: String? = null,
+    val sector: AffiliateSectorDto? = null,
+    val plan: AffiliatePlanDto? = null
+)
+
+@Serializable
+data class AffiliateSectorDto(
+    val name: String? = null,
+    val code: String? = null,
+    val regional: String? = null,
+    val institution: String? = null
+)
+
+@Serializable
+data class AffiliatePlanDto(
+    val name: String? = null,
+    val type: String? = null,
+    val currency: String? = null,
+    @SerialName("affiliation_fee") val affiliationFee: Double? = null,
+    @SerialName("credential_fee") val credentialFee: Double? = null,
+    @SerialName("total_amount") val totalAmount: Double? = null
 )

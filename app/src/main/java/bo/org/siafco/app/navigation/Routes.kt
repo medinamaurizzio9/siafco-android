@@ -17,4 +17,7 @@ sealed interface Routes {
 
     @Serializable
     data object Payment : Routes
+
+    @Serializable
+    data object Profile : Routes
 }
