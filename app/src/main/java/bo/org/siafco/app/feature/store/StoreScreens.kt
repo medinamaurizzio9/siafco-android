@@ -319,11 +319,10 @@ fun StoreOrderDetailScreen(
     LaunchedEffect(state.loggedOut) { if (state.loggedOut) onLoggedOut() }
     LaunchedEffect(state.whatsappUrl) {
         val url = state.whatsappUrl ?: return@LaunchedEffect
-        val uri = Uri.parse(url)
-        val safe = uri.scheme == "https" && uri.host in setOf("wa.me", "api.whatsapp.com", "web.whatsapp.com")
-        if (safe) {
+        val safeUrl = StoreWhatsappPolicy.validate(url)
+        if (safeUrl != null) {
             runCatching {
-                context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(safeUrl)))
             }.onFailure {
                 if (it is ActivityNotFoundException) Unit
             }
