@@ -56,6 +56,116 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun activeAffiliateEnablesProfileWithoutDependingOnPaymentStatus() = runTest(dispatcher) {
+        val gateway = FakeAuthGateway(
+            profileResult = ApiResult.Success(activeProfile()),
+            requestResults = mutableListOf(ApiResult.Success(requestSummary(paymentStatus = "confirmed", canSubmitPayment = false, canViewCredential = true)))
+        )
+        val viewModel = HomeViewModel(gateway)
+
+        viewModel.load()
+        advanceUntilIdle()
+
+        assertEquals(1, gateway.requestCalls)
+        assertTrue(viewModel.state.value.capabilities.canViewProfile)
+        assertTrue(viewModel.state.value.capabilities.canEditProfile)
+        assertTrue(viewModel.state.value.capabilities.canViewAffiliationRequest)
+        assertFalse(viewModel.state.value.capabilities.canSubmitPayment)
+        assertTrue(viewModel.state.value.capabilities.canViewCredential)
+    }
+
+    @Test
+    fun credentialCapabilityFollowsBackendFlag() = runTest(dispatcher) {
+        val visibleGateway = FakeAuthGateway(
+            profileResult = ApiResult.Success(activeProfile()),
+            requestResults = mutableListOf(ApiResult.Success(requestSummary(canViewCredential = true)))
+        )
+        val hiddenGateway = FakeAuthGateway(
+            profileResult = ApiResult.Success(activeProfile()),
+            requestResults = mutableListOf(ApiResult.Success(requestSummary(canViewCredential = false)))
+        )
+
+        val visible = HomeViewModel(visibleGateway)
+        visible.load()
+        advanceUntilIdle()
+        val hidden = HomeViewModel(hiddenGateway)
+        hidden.load()
+        advanceUntilIdle()
+
+        assertTrue(visible.state.value.capabilities.canViewCredential)
+        assertFalse(hidden.state.value.capabilities.canViewCredential)
+    }
+
+    @Test
+    fun limitedPendingAffiliateCanOpenProfileWhenContractAllowsMobileAccess() = runTest(dispatcher) {
+        val gateway = FakeAuthGateway(
+            profileResult = ApiResult.Success(pendingProfile()),
+            requestResults = mutableListOf(ApiResult.Success(requestSummary()))
+        )
+        val viewModel = HomeViewModel(gateway)
+
+        viewModel.load()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.state.value.capabilities.canViewProfile)
+        assertTrue(viewModel.state.value.capabilities.canEditProfile)
+    }
+
+    @Test
+    fun emptyAllowedProfileFieldsKeepsProfileViewButDisablesEditingCapability() = runTest(dispatcher) {
+        val gateway = FakeAuthGateway(
+            profileResult = ApiResult.Success(activeProfile(allowedProfileFields = emptySet())),
+            requestResults = mutableListOf(ApiResult.Success(requestSummary()))
+        )
+        val viewModel = HomeViewModel(gateway)
+
+        viewModel.load()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.state.value.capabilities.canViewProfile)
+        assertFalse(viewModel.state.value.capabilities.canEditProfile)
+    }
+
+    @Test
+    fun profileViewDoesNotDependOnDerivedAffiliateFlagDefault() = runTest(dispatcher) {
+        val gateway = FakeAuthGateway(
+            profileResult = ApiResult.Success(
+                SessionProfile(
+                    name = "Ana Movil Demo",
+                    email = "ana@example.test",
+                    affiliateStatus = "activo",
+                    affiliateStatusLabel = "Afiliado activo",
+                    accessLevel = AccessLevel.Active,
+                    allowedProfileFields = setOf("phone", "email")
+                )
+            ),
+            requestResults = mutableListOf(ApiResult.Success(requestSummary(canSubmitPayment = false)))
+        )
+        val viewModel = HomeViewModel(gateway)
+
+        viewModel.load()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.state.value.capabilities.canViewProfile)
+        assertTrue(viewModel.state.value.capabilities.canEditProfile)
+    }
+
+    @Test
+    fun failedMeKeepsProfileButtonDisabled() = runTest(dispatcher) {
+        val gateway = FakeAuthGateway(
+            profileResult = ApiResult.HttpError(500, null),
+            requestResults = mutableListOf()
+        )
+        val viewModel = HomeViewModel(gateway)
+
+        viewModel.load()
+        advanceUntilIdle()
+
+        assertFalse(viewModel.state.value.capabilities.canViewProfile)
+        assertFalse(viewModel.state.value.capabilities.canEditProfile)
+    }
+
+    @Test
     fun loadIsNotDuplicatedByRecomposition() = runTest(dispatcher) {
         val gateway = FakeAuthGateway(
             profileResult = ApiResult.Success(pendingProfile()),
@@ -174,10 +284,27 @@ class HomeViewModelTest {
         email = "ana@example.test",
         affiliateStatus = "pendiente_pago",
         affiliateStatusLabel = "Pendiente de pago",
-        accessLevel = AccessLevel.Pending
+        accessLevel = AccessLevel.Pending,
+        hasAffiliateProfile = true,
+        allowedProfileFields = setOf("phone", "email", "address", "birth_date", "marital_status")
     )
 
-    private fun requestSummary(code: String = "SOL-1") = AffiliationRequestSummary(
+    private fun activeProfile(allowedProfileFields: Set<String> = setOf("phone", "email")) = SessionProfile(
+        name = "Ana Movil Demo",
+        email = "ana@example.test",
+        affiliateStatus = "activo",
+        affiliateStatusLabel = "Afiliado activo",
+        accessLevel = AccessLevel.Active,
+        hasAffiliateProfile = true,
+        allowedProfileFields = allowedProfileFields
+    )
+
+    private fun requestSummary(
+        code: String = "SOL-1",
+        paymentStatus: String? = null,
+        canSubmitPayment: Boolean = true,
+        canViewCredential: Boolean = false
+    ) = AffiliationRequestSummary(
         requestCode = code,
         status = "pending_payment",
         statusLabel = "Pendiente de pago",
@@ -186,10 +313,10 @@ class HomeViewModelTest {
         amountDue = 250.0,
         currency = "BOB",
         observations = null,
-        paymentStatus = null,
+        paymentStatus = paymentStatus,
         paymentStatusLabel = null,
-        canSubmitPayment = true,
+        canSubmitPayment = canSubmitPayment,
         canLogin = true,
-        canViewCredential = false
+        canViewCredential = canViewCredential
     )
 }

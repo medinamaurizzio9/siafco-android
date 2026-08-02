@@ -128,9 +128,8 @@ class RegisterAffiliationViewModel(
                     )
                 }
                 AffiliationRepositoryResult.NetworkError -> {
-                    PhotoPreparer.clear(current.form.photo)
                     _state.value = current.copy(
-                        form = current.form.withoutSensitiveData(),
+                        form = current.form.copy(password = "", passwordConfirmation = ""),
                         submitting = false,
                         message = "No hay conexion con SIAFCO. Conservamos los datos no sensibles."
                     )

@@ -5,8 +5,10 @@ import androidx.lifecycle.viewModelScope
 import bo.org.siafco.app.core.network.ApiResult
 import bo.org.siafco.app.data.repository.AuthGateway
 import bo.org.siafco.app.domain.AccessLevel
+import bo.org.siafco.app.domain.AffiliateCapabilities
 import bo.org.siafco.app.domain.AffiliationRequestSummary
 import bo.org.siafco.app.domain.SessionProfile
+import bo.org.siafco.app.domain.canStartPaymentSubmission
 import bo.org.siafco.app.feature.UiMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,9 +26,7 @@ class HomeViewModel(private val authRepository: AuthGateway) : ViewModel() {
             when (val result = authRepository.validateSession()) {
                 is ApiResult.Success -> {
                     _state.value = HomeUiState(profile = result.value, loaded = true, sessionLoading = false)
-                    if (result.value.accessLevel == AccessLevel.Pending) {
-                        loadAffiliationRequest(force = true)
-                    }
+                    loadAffiliationRequest(force = true)
                 }
                 is ApiResult.HttpError -> _state.value = HomeUiState(
                     loaded = true,
@@ -118,4 +118,19 @@ data class HomeUiState(
     val loggedOut: Boolean = false,
     val message: UiMessage? = null,
     val requestMessage: UiMessage? = null
-)
+) {
+    val capabilities: AffiliateCapabilities
+        get() = profile.toCapabilities(affiliationRequest)
+}
+
+private fun SessionProfile?.toCapabilities(request: AffiliationRequestSummary?): AffiliateCapabilities {
+    val profile = this
+    val hasMobileProfileAccess = profile?.accessLevel == AccessLevel.Active || profile?.accessLevel == AccessLevel.Pending
+    return AffiliateCapabilities(
+        canViewProfile = profile != null && hasMobileProfileAccess,
+        canEditProfile = profile != null && profile.allowedProfileFields.isNotEmpty(),
+        canViewAffiliationRequest = request != null,
+        canSubmitPayment = request?.canStartPaymentSubmission() == true,
+        canViewCredential = request?.canViewCredential == true
+    )
+}

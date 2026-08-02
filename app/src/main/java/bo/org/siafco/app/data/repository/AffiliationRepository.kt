@@ -9,12 +9,10 @@ import bo.org.siafco.app.data.remote.SiafcoApi
 import bo.org.siafco.app.domain.AffiliationCatalogs
 import bo.org.siafco.app.domain.AffiliationRegistrationForm
 import bo.org.siafco.app.domain.AffiliationRegistrationSuccess
-import bo.org.siafco.app.domain.AccessLevel
 import bo.org.siafco.app.domain.CatalogInstitution
 import bo.org.siafco.app.domain.CatalogOption
 import bo.org.siafco.app.domain.CatalogPlan
 import bo.org.siafco.app.domain.CatalogSector
-import bo.org.siafco.app.domain.SessionProfile
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
@@ -59,7 +57,7 @@ class AffiliationRepository(
                     tokenStore.saveToken(token)
                     AffiliationRepositoryResult.Success(
                         AffiliationRegistrationSuccess(
-                            profile = profile.toDomain().copy(
+                            profile = profile.toSessionProfile("registration").copy(
                                 requestCode = payload.affiliationRequest?.requestCode
                             ),
                             requestCode = payload.affiliationRequest?.requestCode
@@ -156,21 +154,6 @@ class AffiliationRepository(
         maritalStatuses = maritalStatuses,
         institution = CatalogInstitution(institution.name, institution.termsVersion, institution.privacyVersion)
     )
-
-    private fun bo.org.siafco.app.data.remote.MobileProfileDto.toDomain(): SessionProfile {
-        val status = affiliate?.status.orEmpty()
-        return SessionProfile(
-            name = affiliate?.fullName ?: user.name,
-            email = user.email,
-            affiliateStatus = status,
-            affiliateStatusLabel = affiliate?.statusLabel ?: status.ifBlank { "Sin estado" },
-            accessLevel = if (status == "activo" || affiliate?.accessLevel == "full") {
-                AccessLevel.Active
-            } else {
-                AccessLevel.Pending
-            }
-        )
-    }
 }
 
 interface AffiliationRegistrationGateway {

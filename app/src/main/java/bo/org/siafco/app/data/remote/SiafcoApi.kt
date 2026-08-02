@@ -5,6 +5,7 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Multipart
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Part
 import okhttp3.MultipartBody
@@ -27,8 +28,21 @@ interface SiafcoApi {
     @GET("me")
     suspend fun me(): Response<ApiEnvelope<ProfilePayload>>
 
+    @PATCH("me/profile")
+    suspend fun updateProfile(@Body request: UpdateProfileRequest): Response<ApiEnvelope<ProfilePayload>>
+
+    @Multipart
+    @POST("me/profile/photo")
+    suspend fun updateProfilePhoto(@Part photo: MultipartBody.Part): Response<ApiEnvelope<ProfilePayload>>
+
+    @PATCH("me/password")
+    suspend fun updatePassword(@Body request: UpdatePasswordRequest): Response<ApiEnvelope<ProfilePayload>>
+
     @GET("me/affiliation-request")
     suspend fun affiliationRequest(): Response<ApiEnvelope<AffiliationRequestPayload>>
+
+    @GET("me/credential")
+    suspend fun credential(): Response<ApiEnvelope<CredentialPayload>>
 
     @Multipart
     @POST("me/affiliation-request/payment")
@@ -39,4 +53,7 @@ interface SiafcoApi {
 
     @POST("auth/logout")
     suspend fun logout(): Response<ApiEnvelope<EmptyPayload>>
+
+    @POST("auth/logout-all")
+    suspend fun logoutAll(): Response<ApiEnvelope<EmptyPayload>>
 }

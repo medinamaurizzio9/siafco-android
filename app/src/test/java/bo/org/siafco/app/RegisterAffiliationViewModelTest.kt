@@ -75,7 +75,7 @@ class RegisterAffiliationViewModelTest {
     }
 
     @Test
-    fun networkFailurePreservesOnlyNonSensitiveFormData() = runTest(dispatcher) {
+    fun networkFailureClearsPasswordAndKeepsProcessedPhotoForRetry() = runTest(dispatcher) {
         val repository = FakeAffiliationGateway(AffiliationRepositoryResult.NetworkError)
         val photo = tempPhoto()
         val viewModel = RegisterAffiliationViewModel(repository)
@@ -89,8 +89,8 @@ class RegisterAffiliationViewModelTest {
         assertEquals("70000001", form.phone)
         assertEquals("", form.password)
         assertEquals("", form.passwordConfirmation)
-        assertNull(form.photo)
-        assertFalse(photo.file.exists())
+        assertEquals(photo, form.photo)
+        assertTrue(photo.file.exists())
     }
 
     @Test
