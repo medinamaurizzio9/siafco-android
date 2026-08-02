@@ -1,7 +1,6 @@
 package bo.org.siafco.app.data.repository
 
 import bo.org.siafco.app.core.data.TokenStore
-import bo.org.siafco.app.core.debug.MobileDiagnostics
 import bo.org.siafco.app.core.network.ApiResult
 import bo.org.siafco.app.data.remote.ApiEnvelope
 import bo.org.siafco.app.data.remote.AffiliationRequestPayload
@@ -58,17 +57,8 @@ class AuthRepository(
         val response = api.affiliationRequest()
         if (response.isSuccessful) {
             val request = response.body()?.data?.affiliationRequest
-            MobileDiagnostics.home(
-                "affiliation-request.dto",
-                "status=${request?.status.orEmpty()} payment_status=${request?.payment?.status.orEmpty()} canSubmitPayment=${request?.capabilities?.canSubmitPayment == true} canViewCredential=${request?.capabilities?.canViewCredential == true}"
-            )
             if (response.body()?.success == true && request?.requestCode != null) {
-                val mapped = request.toDomain()
-                MobileDiagnostics.home(
-                    "affiliation-request.mapper",
-                    "status=${mapped.status} payment_status=${mapped.paymentStatus.orEmpty()} canSubmitPayment=${mapped.canSubmitPayment} canViewCredential=${mapped.canViewCredential}"
-                )
-                ApiResult.Success(mapped)
+                ApiResult.Success(request.toDomain())
             } else {
                 ApiResult.UnknownError
             }

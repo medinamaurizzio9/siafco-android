@@ -2,7 +2,6 @@ package bo.org.siafco.app.feature.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import bo.org.siafco.app.core.debug.MobileDiagnostics
 import bo.org.siafco.app.core.network.ApiResult
 import bo.org.siafco.app.data.repository.AuthGateway
 import bo.org.siafco.app.domain.AccessLevel
@@ -26,10 +25,6 @@ class HomeViewModel(private val authRepository: AuthGateway) : ViewModel() {
         viewModelScope.launch {
             when (val result = authRepository.validateSession()) {
                 is ApiResult.Success -> {
-                    MobileDiagnostics.home(
-                        "HomeViewModel.me",
-                        "allowed_profile_fields=${result.value.allowedProfileFields} access_level=${result.value.accessLevel} status=${result.value.affiliateStatus}"
-                    )
                     _state.value = HomeUiState(profile = result.value, loaded = true, sessionLoading = false)
                     loadAffiliationRequest(force = true)
                 }
@@ -66,12 +61,7 @@ class HomeViewModel(private val authRepository: AuthGateway) : ViewModel() {
                     requestLoading = false,
                     affiliationRequest = result.value,
                     requestMessage = null
-                ).also {
-                    MobileDiagnostics.home(
-                        "HomeViewModel.request",
-                        "payment_status=${result.value.paymentStatus.orEmpty()} canSubmitPayment=${result.value.canSubmitPayment} canViewCredential=${result.value.canViewCredential}"
-                    )
-                }
+                )
                 is ApiResult.HttpError -> _state.value = _state.value.copy(
                     requestLoading = false,
                     loggedOut = result.code == 401,
@@ -142,10 +132,5 @@ private fun SessionProfile?.toCapabilities(request: AffiliationRequestSummary?):
         canViewAffiliationRequest = request != null,
         canSubmitPayment = request?.canStartPaymentSubmission() == true,
         canViewCredential = request?.canViewCredential == true
-    ).also {
-        MobileDiagnostics.home(
-            "AffiliateCapabilities",
-            "allowed_profile_fields=${profile?.allowedProfileFields.orEmpty()} access_level=${profile?.accessLevel} status=${profile?.affiliateStatus.orEmpty()} payment_status=${request?.paymentStatus.orEmpty()} canViewProfile=${it.canViewProfile} canEditProfile=${it.canEditProfile} canViewRequest=${it.canViewAffiliationRequest} canSubmitPayment=${it.canSubmitPayment} canViewCredential=${it.canViewCredential}"
-        )
-    }
+    )
 }

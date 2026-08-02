@@ -27,7 +27,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import bo.org.siafco.app.R
-import bo.org.siafco.app.core.debug.MobileDiagnostics
 import bo.org.siafco.app.domain.AccessLevel
 import bo.org.siafco.app.domain.AffiliationRequestSummary
 import bo.org.siafco.app.domain.paymentDisabledReason
@@ -45,13 +44,6 @@ fun HomeScreen(
     LaunchedEffect(Unit) { viewModel.load() }
     LaunchedEffect(state.loggedOut) {
         if (state.loggedOut) onLoggedOut()
-    }
-    LaunchedEffect(state.profile, state.affiliationRequest, state.capabilities) {
-        val capabilities = state.capabilities
-        MobileDiagnostics.home(
-            "HomeScreen.enabled",
-            "allowed_profile_fields=${state.profile?.allowedProfileFields.orEmpty()} access_level=${state.profile?.accessLevel} status=${state.profile?.affiliateStatus.orEmpty()} payment_status=${state.affiliationRequest?.paymentStatus.orEmpty()} canViewProfile=${capabilities.canViewProfile} canEditProfile=${capabilities.canEditProfile} canViewRequest=${capabilities.canViewAffiliationRequest} canSubmitPayment=${capabilities.canSubmitPayment} canViewCredential=${capabilities.canViewCredential}"
-        )
     }
 
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
