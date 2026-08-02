@@ -5,9 +5,11 @@ import androidx.lifecycle.ViewModelProvider
 import bo.org.siafco.app.data.payment.PendingPaymentStore
 import bo.org.siafco.app.data.repository.AffiliationRepository
 import bo.org.siafco.app.data.repository.AuthRepository
+import bo.org.siafco.app.data.repository.CredentialRepository
 import bo.org.siafco.app.data.repository.PaymentRepository
 import bo.org.siafco.app.data.repository.ProfileRepository
 import bo.org.siafco.app.feature.auth.LoginViewModel
+import bo.org.siafco.app.feature.credential.CredentialViewModel
 import bo.org.siafco.app.feature.home.HomeViewModel
 import bo.org.siafco.app.feature.payment.PaymentViewModel
 import bo.org.siafco.app.feature.profile.ProfileViewModel
@@ -20,6 +22,7 @@ class SiafcoViewModelFactory(
     private val affiliationRepository: AffiliationRepository,
     private val paymentRepository: PaymentRepository,
     private val profileRepository: ProfileRepository,
+    private val credentialRepository: CredentialRepository,
     private val pendingPaymentStore: PendingPaymentStore
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
@@ -39,6 +42,9 @@ class SiafcoViewModelFactory(
             }
             modelClass.isAssignableFrom(AffiliationRequestViewModel::class.java) -> {
                 AffiliationRequestViewModel(authRepository)
+            }
+            modelClass.isAssignableFrom(CredentialViewModel::class.java) -> {
+                CredentialViewModel(credentialRepository)
             }
             else -> error("ViewModel no soportado: ${modelClass.name}")
         } as T

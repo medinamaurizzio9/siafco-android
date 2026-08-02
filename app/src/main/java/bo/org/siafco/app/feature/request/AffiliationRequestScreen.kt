@@ -26,21 +26,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import bo.org.siafco.app.R
 import bo.org.siafco.app.domain.AffiliationRequestSummary
-import bo.org.siafco.app.domain.canStartPaymentSubmission
 import java.util.Locale
 
 @Composable
 fun AffiliationRequestScreen(
     viewModel: AffiliationRequestViewModel,
     onBack: () -> Unit,
-    onSubmitPayment: () -> Unit,
-    onLoggedOut: () -> Unit
+    onOpenCredential: () -> Unit,
+    onSubmitPayment: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
     LaunchedEffect(Unit) { viewModel.load() }
-    LaunchedEffect(state.loggedOut) {
-        if (state.loggedOut) onLoggedOut()
-    }
 
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
@@ -51,19 +47,19 @@ fun AffiliationRequestScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             OutlinedButton(onClick = onBack) { Text(stringResource(R.string.register_back)) }
-            Text(
-                stringResource(R.string.home_request_title),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
+            Text(stringResource(R.string.home_request_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             if (state.loading && state.request == null) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
             }
             state.request?.let { request ->
                 RequestStatusCard(request)
                 RequestDetailCard(request)
-                RequestPaymentInstructions(request)
-                if (request.canStartPaymentSubmission()) {
+                if (request.canViewCredential) {
+                    Button(onClick = onOpenCredential, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.request_view_credential))
+                    }
+                }
+                if (request.canStartPayment()) {
                     Button(onClick = onSubmitPayment, modifier = Modifier.fillMaxWidth()) {
                         Text(stringResource(R.string.home_payment_submit))
                     }
@@ -96,7 +92,6 @@ private fun RequestDetailCard(request: AffiliationRequestSummary) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             InfoLine(stringResource(R.string.request_code), request.requestCode)
             InfoLine(stringResource(R.string.request_status), request.statusLabel)
-            InfoLine(stringResource(R.string.request_description), request.statusDescription)
             InfoLine(stringResource(R.string.request_plan), request.planName)
             if (request.amountDue != null && !request.currency.isNullOrBlank()) {
                 InfoLine(stringResource(R.string.request_amount), "${request.currency} ${String.format(Locale.US, "%.2f", request.amountDue)}")
@@ -104,31 +99,7 @@ private fun RequestDetailCard(request: AffiliationRequestSummary) {
             InfoLine(stringResource(R.string.request_payment_status), request.paymentStatusLabel)
             InfoLine(stringResource(R.string.request_transaction_number), request.transactionNumber)
             InfoLine(stringResource(R.string.request_payment_date), request.paymentDate)
-            if (request.paidAmount != null && !request.currency.isNullOrBlank()) {
-                InfoLine(stringResource(R.string.request_paid_amount), "${request.currency} ${String.format(Locale.US, "%.2f", request.paidAmount)}")
-            }
             InfoLine(stringResource(R.string.request_observations), request.observations ?: request.rejectionReason)
-        }
-    }
-}
-
-@Composable
-private fun RequestPaymentInstructions(request: AffiliationRequestSummary) {
-    if (!request.canStartPaymentSubmission()) return
-    val hasInstructions = !request.paymentBank.isNullOrBlank() ||
-        !request.paymentHolder.isNullOrBlank() ||
-        !request.paymentAccount.isNullOrBlank() ||
-        !request.paymentInstructions.isNullOrBlank() ||
-        !request.planPaymentInstructions.isNullOrBlank()
-    if (!hasInstructions) return
-
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(stringResource(R.string.request_payment_instructions_title), style = MaterialTheme.typography.titleMedium)
-            InfoLine(stringResource(R.string.payment_bank), request.paymentBank)
-            InfoLine(stringResource(R.string.payment_holder), request.paymentHolder)
-            InfoLine(stringResource(R.string.payment_account), request.paymentAccount)
-            InfoLine(stringResource(R.string.request_payment_instructions), request.paymentInstructions ?: request.planPaymentInstructions)
         }
     }
 }
@@ -144,6 +115,9 @@ private fun statusMessage(request: AffiliationRequestSummary): String = when (re
     "observed", "observado" -> request.observations ?: "Revisa las observaciones para continuar."
     else -> request.statusDescription ?: request.statusLabel
 }
+
+private fun AffiliationRequestSummary.canStartPayment(): Boolean =
+    canSubmitPayment && (status == "pending_payment" || status == "rejected")
 
 @Composable
 private fun InfoLine(label: String, value: String?) {

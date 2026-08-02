@@ -38,6 +38,7 @@ fun HomeScreen(
     viewModel: HomeViewModel,
     onOpenProfile: () -> Unit,
     onOpenAffiliationRequest: () -> Unit,
+    onOpenCredential: () -> Unit,
     onSubmitPayment: () -> Unit,
     onLoggedOut: () -> Unit
 ) {
@@ -111,6 +112,15 @@ fun HomeScreen(
                         enabled = state.capabilities.canViewAffiliationRequest
                     ) {
                         Text(stringResource(R.string.home_request))
+                    }
+                    if (state.capabilities.canViewCredential) {
+                        OutlinedButton(
+                            onClick = onOpenCredential,
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = true
+                        ) {
+                            Text(stringResource(R.string.home_credential))
+                        }
                     }
                     OutlinedButton(
                         onClick = onSubmitPayment,

@@ -41,6 +41,9 @@ interface SiafcoApi {
     @GET("me/affiliation-request")
     suspend fun affiliationRequest(): Response<ApiEnvelope<AffiliationRequestPayload>>
 
+    @GET("me/credential")
+    suspend fun credential(): Response<ApiEnvelope<CredentialPayload>>
+
     @Multipart
     @POST("me/affiliation-request/payment")
     suspend fun submitAffiliationPayment(

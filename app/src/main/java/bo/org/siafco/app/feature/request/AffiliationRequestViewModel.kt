@@ -28,9 +28,8 @@ class AffiliationRequestViewModel(private val authRepository: AuthGateway) : Vie
                 is ApiResult.HttpError -> _state.value = _state.value.copy(
                     loaded = true,
                     loading = false,
-                    loggedOut = result.code == 401,
                     message = when (result.code) {
-                        401 -> null
+                        401 -> UiMessage.Unauthorized
                         403 -> UiMessage.Forbidden
                         404 -> UiMessage.RequestNotFound
                         429 -> UiMessage.RateLimited
@@ -47,7 +46,6 @@ class AffiliationRequestViewModel(private val authRepository: AuthGateway) : Vie
 data class AffiliationRequestUiState(
     val loaded: Boolean = false,
     val loading: Boolean = false,
-    val loggedOut: Boolean = false,
     val request: AffiliationRequestSummary? = null,
     val message: UiMessage? = null
 )

@@ -53,6 +53,26 @@ data class PaymentSubmissionPayload(
 )
 
 @Serializable
+data class CredentialPayload(
+    val credential: MobileCredentialDto? = null
+)
+
+@Serializable
+data class MobileCredentialDto(
+    @SerialName("institution_name") val institutionName: String? = null,
+    @SerialName("affiliate_name") val affiliateName: String? = null,
+    @SerialName("registration_number") val registrationNumber: String? = null,
+    val sector: String? = null,
+    val regional: String? = null,
+    val status: String? = null,
+    @SerialName("status_label") val statusLabel: String? = null,
+    @SerialName("issued_at") val issuedAt: String? = null,
+    @SerialName("photo_url") val photoUrl: String? = null,
+    @SerialName("verification_url") val verificationUrl: String? = null,
+    @SerialName("qr_image") val qrImage: String? = null
+)
+
+@Serializable
 data class MobileAffiliationRequestDto(
     @SerialName("request_code") val requestCode: String? = null,
     val status: String? = null,

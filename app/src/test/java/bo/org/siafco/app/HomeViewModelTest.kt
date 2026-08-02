@@ -59,7 +59,7 @@ class HomeViewModelTest {
     fun activeAffiliateEnablesProfileWithoutDependingOnPaymentStatus() = runTest(dispatcher) {
         val gateway = FakeAuthGateway(
             profileResult = ApiResult.Success(activeProfile()),
-            requestResults = mutableListOf(ApiResult.Success(requestSummary(paymentStatus = "rejected", canSubmitPayment = false)))
+            requestResults = mutableListOf(ApiResult.Success(requestSummary(paymentStatus = "confirmed", canSubmitPayment = false, canViewCredential = true)))
         )
         val viewModel = HomeViewModel(gateway)
 
@@ -71,6 +71,29 @@ class HomeViewModelTest {
         assertTrue(viewModel.state.value.capabilities.canEditProfile)
         assertTrue(viewModel.state.value.capabilities.canViewAffiliationRequest)
         assertFalse(viewModel.state.value.capabilities.canSubmitPayment)
+        assertTrue(viewModel.state.value.capabilities.canViewCredential)
+    }
+
+    @Test
+    fun credentialCapabilityFollowsBackendFlag() = runTest(dispatcher) {
+        val visibleGateway = FakeAuthGateway(
+            profileResult = ApiResult.Success(activeProfile()),
+            requestResults = mutableListOf(ApiResult.Success(requestSummary(canViewCredential = true)))
+        )
+        val hiddenGateway = FakeAuthGateway(
+            profileResult = ApiResult.Success(activeProfile()),
+            requestResults = mutableListOf(ApiResult.Success(requestSummary(canViewCredential = false)))
+        )
+
+        val visible = HomeViewModel(visibleGateway)
+        visible.load()
+        advanceUntilIdle()
+        val hidden = HomeViewModel(hiddenGateway)
+        hidden.load()
+        advanceUntilIdle()
+
+        assertTrue(visible.state.value.capabilities.canViewCredential)
+        assertFalse(hidden.state.value.capabilities.canViewCredential)
     }
 
     @Test
