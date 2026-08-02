@@ -126,7 +126,7 @@ fun ProfileScreen(
                     onClick = { if (state.form.email != profile.email) confirmEmail = true else viewModel.saveProfile() },
                     enabled = !state.savingProfile,
                     modifier = Modifier.fillMaxWidth()
-                ) { Text(stringResource(R.string.profile_save)) }
+                ) { Text(if (state.savingProfile) "Guardando..." else stringResource(R.string.profile_save)) }
                 PhotoSection(
                     state = state,
                     onPick = { photoFlowVisible = true },
@@ -293,12 +293,15 @@ private fun PhotoSection(state: ProfileUiState, onPick: () -> Unit, onUpload: ()
                 Text("Tamaño optimizado: ${formatPhotoSize(it.sizeBytes)}", style = MaterialTheme.typography.bodySmall)
                 Text("Esta fotografía se utilizará en tu perfil y credencial.", style = MaterialTheme.typography.bodySmall)
             }
+            if (state.pendingPhoto != null) {
+                Text("Fotografia seleccionada, todavia no guardada.", style = MaterialTheme.typography.bodySmall)
+            }
             state.fieldErrors["photo"]?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             OutlinedButton(onClick = onPick, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.profile_change_photo))
             }
             Button(onClick = onUpload, enabled = hasReadablePendingPhoto && !state.savingPhoto, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.profile_upload_photo))
+                Text(if (state.savingPhoto) "Subiendo..." else stringResource(R.string.profile_upload_photo))
             }
         }
     }

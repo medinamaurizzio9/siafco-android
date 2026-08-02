@@ -115,6 +115,15 @@ class ProfileRepositoryTest {
         assertTrue(repository.updateProfile(ProfileUpdateForm(email = "bad@siafco.test")) is ProfileResult.RateLimited)
     }
 
+    @Test
+    fun http200WithSuccessFalseIsNotTreatedAsProfileSuccess() = runTest {
+        server.enqueue(jsonResponse("""{"success":false,"message":"No actualizado.","errors":{"phone":["Invalido."]}}"""))
+
+        val result = repository.updateProfile(ProfileUpdateForm(email = "profile@siafco.test", phone = "bad"))
+
+        assertTrue(result is ProfileResult.UnknownError)
+    }
+
     private fun api(server: MockWebServer): SiafcoApi {
         val json = Json { ignoreUnknownKeys = true }
         return Retrofit.Builder()
@@ -217,7 +226,7 @@ class ProfileRepositoryTest {
                     "status": "activo",
                     "status_label": "Activo",
                     "sector": {"name":"Magisterio","code":"MAG","regional":"LA PAZ","institution":"Institucion"},
-                    "plan": {"name":"Plan base","type":"regular","currency":"BOB","affiliation_fee":100,"total_amount":130}
+                    "plan": {"name":"Plan base","type":"regular","currency":"BOB","affiliation_fee":100,"credential_fee":30,"total_amount":130}
                   },
                   "allowed_profile_fields": ["phone","email","address","birth_date","marital_status","photo"]
                 }

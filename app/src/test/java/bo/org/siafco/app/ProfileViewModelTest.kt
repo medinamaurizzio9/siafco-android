@@ -53,7 +53,11 @@ class ProfileViewModelTest {
 
     @Test
     fun saveProfileDoesNotSubmitTwiceWhileSaving() = runTest(dispatcher) {
-        val gateway = FakeProfileGateway(updateResult = ProfileResult.Success(profile(email = "new@siafco.test")), delayUpdates = true)
+        val gateway = FakeProfileGateway(
+            updateResult = ProfileResult.Success(profile(email = "new@siafco.test")),
+            loadAfterUpdate = ProfileResult.Success(profile(email = "new@siafco.test")),
+            delayUpdates = true
+        )
         val viewModel = ProfileViewModel(gateway)
 
         viewModel.load()
@@ -70,7 +74,10 @@ class ProfileViewModelTest {
     @Test
     fun savePhotoSuccessClearsTemporaryPhoto() = runTest(dispatcher) {
         val photo = photo()
-        val viewModel = ProfileViewModel(FakeProfileGateway(photoResult = ProfileResult.Success(profile(photoUrl = "https://siafco.test/photo.jpg"))))
+        val viewModel = ProfileViewModel(FakeProfileGateway(
+            photoResult = ProfileResult.Success(profile(photoUrl = "https://siafco.test/photo.jpg?v=2")),
+            loadAfterPhoto = ProfileResult.Success(profile(photoUrl = "https://siafco.test/photo.jpg?v=2"))
+        ))
 
         viewModel.setPhoto(photo)
         viewModel.savePhoto()
@@ -78,7 +85,47 @@ class ProfileViewModelTest {
 
         assertNull(viewModel.state.value.pendingPhoto)
         assertFalse(photo.file.exists())
-        assertEquals("https://siafco.test/photo.jpg", viewModel.state.value.profile?.photoUrl)
+        assertEquals("https://siafco.test/photo.jpg?v=2", viewModel.state.value.profile?.photoUrl)
+    }
+
+    @Test
+    fun saveProfileRequiresFreshProfileToReflectChanges() = runTest(dispatcher) {
+        val gateway = FakeProfileGateway(
+            updateResult = ProfileResult.Success(profile(phone = "76543210")),
+            loadAfterUpdate = ProfileResult.Success(profile(phone = "70000000"))
+        )
+        val viewModel = ProfileViewModel(gateway)
+
+        viewModel.load()
+        advanceUntilIdle()
+        viewModel.updateForm { copy(phone = "76543210") }
+        viewModel.saveProfile()
+        advanceUntilIdle()
+
+        assertEquals(UiMessage.Unknown, viewModel.state.value.message)
+        assertEquals("70000000", viewModel.state.value.profile?.phone)
+        assertEquals("76543210", viewModel.state.value.form.phone)
+    }
+
+    @Test
+    fun savePhotoKeepsTemporaryPhotoWhenFreshProfileDoesNotChangeUrl() = runTest(dispatcher) {
+        val photo = photo()
+        val gateway = FakeProfileGateway(
+            loadResult = ProfileResult.Success(profile(photoUrl = "https://siafco.test/photo.jpg?v=1")),
+            photoResult = ProfileResult.Success(profile(photoUrl = "https://siafco.test/photo.jpg?v=2")),
+            loadAfterPhoto = ProfileResult.Success(profile(photoUrl = "https://siafco.test/photo.jpg?v=1"))
+        )
+        val viewModel = ProfileViewModel(gateway)
+
+        viewModel.load()
+        advanceUntilIdle()
+        viewModel.setPhoto(photo)
+        viewModel.savePhoto()
+        advanceUntilIdle()
+
+        assertEquals(UiMessage.Unknown, viewModel.state.value.message)
+        assertEquals(photo, viewModel.state.value.pendingPhoto)
+        assertTrue(photo.file.exists())
     }
 
     @Test
@@ -153,6 +200,8 @@ class ProfileViewModelTest {
 
     private class FakeProfileGateway(
         private val loadResult: ProfileResult = ProfileResult.Success(profile()),
+        private val loadAfterUpdate: ProfileResult? = null,
+        private val loadAfterPhoto: ProfileResult? = null,
         private val updateResult: ProfileResult = ProfileResult.Success(profile()),
         private val photoResult: ProfileResult = ProfileResult.Success(profile()),
         private val passwordResult: ProfileResult = ProfileResult.Success(profile()),
@@ -161,17 +210,30 @@ class ProfileViewModelTest {
     ) : ProfileGateway {
         var updateProfileCalls = 0
         var clearLocalSessionCalled = false
+        private var profileLoadCalls = 0
+        private var lastOperation: String? = null
 
-        override suspend fun load(): ProfileResult = loadResult
+        override suspend fun load(): ProfileResult {
+            profileLoadCalls++
+            return when (lastOperation) {
+                "profile" -> loadAfterUpdate ?: loadResult
+                "photo" -> loadAfterPhoto ?: loadResult
+                else -> loadResult
+            }
+        }
         override suspend fun loadMaritalStatuses(): List<String> = listOf("SOLTERO", "CASADO")
 
         override suspend fun updateProfile(changes: ProfileUpdateForm): ProfileResult {
             updateProfileCalls++
             if (delayUpdates) delay(100)
+            lastOperation = "profile"
             return updateResult
         }
 
-        override suspend fun updatePhoto(photo: PreparedPhoto): ProfileResult = photoResult
+        override suspend fun updatePhoto(photo: PreparedPhoto): ProfileResult {
+            lastOperation = "photo"
+            return photoResult
+        }
         override suspend fun updatePassword(form: ChangePasswordForm): ProfileResult = passwordResult
         override suspend fun logoutAll(): ProfileResult = logoutAllResult
 
@@ -183,12 +245,13 @@ class ProfileViewModelTest {
     private companion object {
         fun profile(
             email: String = "profile@siafco.test",
+            phone: String = "70000000",
             photoUrl: String? = null
         ) = MobileProfile(
             fullName = "Afiliado Demo",
             ci = "90010001",
             email = email,
-            phone = "70000000",
+            phone = phone,
             address = "Direccion",
             birthDate = "1990-01-01",
             maritalStatus = "SOLTERO",

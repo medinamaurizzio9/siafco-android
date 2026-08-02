@@ -63,15 +63,10 @@ class ProfileViewModel(private val repository: ProfileGateway) : ViewModel() {
             _state.value = current.copy(fieldErrors = errors, message = UiMessage.Validation)
             return
         }
-        _state.value = current.copy(savingProfile = true, fieldErrors = emptyMap(), message = null)
+        _state.value = current.copy(savingProfile = true, fieldErrors = emptyMap(), message = null, messageText = null)
         viewModelScope.launch {
             when (val result = repository.updateProfile(current.form)) {
-                is ProfileResult.Success -> _state.value = _state.value.copy(
-                    savingProfile = false,
-                    profile = result.profile,
-                    form = result.profile.toForm(),
-                    messageText = "Perfil actualizado."
-                )
+                is ProfileResult.Success -> confirmProfileUpdate(current.form)
                 else -> applyResult(result, savingProfile = false)
             }
         }
@@ -81,19 +76,10 @@ class ProfileViewModel(private val repository: ProfileGateway) : ViewModel() {
         val current = _state.value
         val photo = current.pendingPhoto ?: return
         if (current.savingPhoto) return
-        _state.value = current.copy(savingPhoto = true, fieldErrors = emptyMap(), message = null)
+        _state.value = current.copy(savingPhoto = true, fieldErrors = emptyMap(), message = null, messageText = null)
         viewModelScope.launch {
             when (val result = repository.updatePhoto(photo)) {
-                is ProfileResult.Success -> {
-                    PhotoPreparer.clear(photo)
-                    _state.value = _state.value.copy(
-                        savingPhoto = false,
-                        pendingPhoto = null,
-                        profile = result.profile,
-                        form = result.profile.toForm(),
-                        messageText = "Fotografía actualizada."
-                    )
-                }
+                is ProfileResult.Success -> confirmPhotoUpdate(photo, current.profile?.photoUrl)
                 is ProfileResult.ValidationError, is ProfileResult.Forbidden, is ProfileResult.RateLimited, is ProfileResult.HttpError, ProfileResult.Unauthorized -> {
                     PhotoPreparer.clear(photo)
                     _state.value = _state.value.copy(pendingPhoto = null)
@@ -134,7 +120,7 @@ class ProfileViewModel(private val repository: ProfileGateway) : ViewModel() {
                     profile = result.profile,
                     passwordForm = ChangePasswordForm(),
                     passwordVisible = false,
-                    messageText = "Contraseña actualizada. La sesión actual continúa activa."
+                    messageText = "Contrasena actualizada. La sesion actual continua activa."
                 )
                 else -> {
                     if (result is ProfileResult.Unauthorized) {
@@ -155,7 +141,7 @@ class ProfileViewModel(private val repository: ProfileGateway) : ViewModel() {
                 ProfileResult.NetworkError -> _state.value = _state.value.copy(
                     loggingOutAll = false,
                     message = UiMessage.Network,
-                    messageText = "No se pudo cerrar sesiones remotas. Podrían seguir activas."
+                    messageText = "No se pudo cerrar sesiones remotas. Podrian seguir activas."
                 )
                 else -> applyResult(result, loggingOutAll = false)
             }
@@ -165,6 +151,54 @@ class ProfileViewModel(private val repository: ProfileGateway) : ViewModel() {
     fun clearSensitiveData() {
         PhotoPreparer.clear(_state.value.pendingPhoto)
         _state.value = _state.value.copy(pendingPhoto = null, passwordForm = ChangePasswordForm(), passwordVisible = false)
+    }
+
+    private suspend fun confirmProfileUpdate(expected: ProfileUpdateForm) {
+        when (val refreshed = repository.load()) {
+            is ProfileResult.Success -> {
+                if (refreshed.profile.matches(expected)) {
+                    _state.value = _state.value.copy(
+                        savingProfile = false,
+                        profile = refreshed.profile,
+                        form = refreshed.profile.toForm(),
+                        messageText = "Perfil actualizado."
+                    )
+                } else {
+                    _state.value = _state.value.copy(
+                        savingProfile = false,
+                        message = UiMessage.Unknown,
+                        messageText = "El servidor respondio, pero el perfil no refleja los cambios. Intenta nuevamente."
+                    )
+                }
+            }
+            else -> applyResult(refreshed, savingProfile = false)
+        }
+    }
+
+    private suspend fun confirmPhotoUpdate(photo: PreparedPhoto, previousPhotoUrl: String?) {
+        when (val refreshed = repository.load()) {
+            is ProfileResult.Success -> {
+                val confirmedPhotoUrl = refreshed.profile.photoUrl
+                if (!confirmedPhotoUrl.isNullOrBlank() && confirmedPhotoUrl != previousPhotoUrl) {
+                    PhotoPreparer.clear(photo)
+                    _state.value = _state.value.copy(
+                        savingPhoto = false,
+                        pendingPhoto = null,
+                        profile = refreshed.profile,
+                        form = refreshed.profile.toForm(),
+                        messageText = "Fotografia actualizada."
+                    )
+                } else {
+                    _state.value = _state.value.copy(
+                        savingPhoto = false,
+                        fieldErrors = mapOf("photo" to "El servidor respondio, pero la fotografia oficial no cambio. Intenta subirla nuevamente."),
+                        message = UiMessage.Unknown,
+                        messageText = "La fotografia todavia no fue confirmada por el servidor."
+                    )
+                }
+            }
+            else -> applyResult(refreshed, savingPhoto = false)
+        }
     }
 
     private suspend fun applyResult(
@@ -219,20 +253,20 @@ class ProfileViewModel(private val repository: ProfileGateway) : ViewModel() {
     )
 
     private fun validateProfile(form: ProfileUpdateForm): Map<String, String> = buildMap {
-        if (form.email.isBlank() || !form.email.contains("@")) put("email", "Ingresa un correo válido.")
-        if (form.phone.any { !(it.isDigit() || it in "+(). -") }) put("phone", "Ingresa un teléfono válido.")
+        if (form.email.isBlank() || !form.email.contains("@")) put("email", "Ingresa un correo valido.")
+        if (form.phone.any { !(it.isDigit() || it in "+(). -") }) put("phone", "Ingresa un telefono valido.")
         val birthDate = form.birthDate.takeIf(String::isNotBlank)?.let { runCatching { LocalDate.parse(it) }.getOrNull() }
-        if (form.birthDate.isNotBlank() && birthDate == null) put("birth_date", "Ingresa una fecha válida.")
+        if (form.birthDate.isNotBlank() && birthDate == null) put("birth_date", "Ingresa una fecha valida.")
         if (birthDate != null && !birthDate.isBefore(LocalDate.now())) put("birth_date", "La fecha debe ser anterior a hoy.")
     }
 
     private fun validatePassword(form: ChangePasswordForm): Map<String, String> = buildMap {
-        if (form.currentPassword.isBlank()) put("current_password", "Ingresa tu contraseña actual.")
+        if (form.currentPassword.isBlank()) put("current_password", "Ingresa tu contrasena actual.")
         if (form.password.length < 8 || !form.password.any(Char::isLetter) || !form.password.any(Char::isDigit)) {
-            put("password", "La contraseña debe tener al menos 8 caracteres, letras y números.")
+            put("password", "La contrasena debe tener al menos 8 caracteres, letras y numeros.")
         }
-        if (form.passwordConfirmation.isBlank()) put("password_confirmation", "Confirma la nueva contraseña.")
-        if (form.password != form.passwordConfirmation) put("password_confirmation", "Las contraseñas no coinciden.")
+        if (form.passwordConfirmation.isBlank()) put("password_confirmation", "Confirma la nueva contrasena.")
+        if (form.password != form.passwordConfirmation) put("password_confirmation", "Las contrasenas no coinciden.")
     }
 
     private fun MobileProfile.toForm() = ProfileUpdateForm(
@@ -242,6 +276,16 @@ class ProfileViewModel(private val repository: ProfileGateway) : ViewModel() {
         birthDate = birthDate.orEmpty(),
         maritalStatus = maritalStatus.orEmpty()
     )
+
+    private fun MobileProfile.matches(expected: ProfileUpdateForm): Boolean =
+        phone.sameProfileValue(expected.phone) &&
+            email == expected.email &&
+            address.sameProfileValue(expected.address) &&
+            birthDate.sameProfileValue(expected.birthDate) &&
+            maritalStatus.sameProfileValue(expected.maritalStatus)
+
+    private fun String?.sameProfileValue(expected: String): Boolean =
+        orEmpty().trim() == expected.trim()
 }
 
 data class ProfileUiState(
