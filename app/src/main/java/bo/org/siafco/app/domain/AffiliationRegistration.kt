@@ -70,7 +70,11 @@ data class AffiliationRegistrationForm(
 
 data class PreparedPhoto(
     val file: File,
-    val displayName: String
+    val displayName: String,
+    val width: Int = 0,
+    val height: Int = 0,
+    val sizeBytes: Long = file.length(),
+    val mimeType: String = "image/jpeg"
 )
 
 data class AffiliationRegistrationSuccess(

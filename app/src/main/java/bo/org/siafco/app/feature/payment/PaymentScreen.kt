@@ -1,6 +1,7 @@
 package bo.org.siafco.app.feature.payment
 
 import android.app.DatePickerDialog
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -24,11 +26,14 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -54,6 +59,22 @@ fun PaymentScreen(
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
     val receiptPreparer = remember(context) { ReceiptPreparer(context) }
+    var confirmBack by remember { mutableStateOf(false) }
+
+    fun requestBack() {
+        when (PaymentBackPolicy.decide(state.submitting, state.networkRetryAvailable)) {
+            PaymentBackDecision.ConfirmAndPreserveDraft -> confirmBack = true
+            PaymentBackDecision.LeaveAndClearDraft -> {
+                viewModel.clearSensitiveDraft()
+                onBack()
+            }
+        }
+    }
+
+    BackHandler {
+        requestBack()
+    }
+
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             viewModel.setReceipt(receiptPreparer.prepare(uri))
@@ -124,15 +145,34 @@ fun PaymentScreen(
             state.blockingMessage?.let { Text(text = it, color = MaterialTheme.colorScheme.error) }
 
             OutlinedButton(
-                onClick = {
-                    viewModel.clearSensitiveDraft()
-                    onBack()
-                },
+                onClick = { requestBack() },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(stringResource(R.string.register_back))
             }
         }
+    }
+    if (confirmBack) {
+        AlertDialog(
+            onDismissRequest = { confirmBack = false },
+            title = { Text("Volver a Home") },
+            text = {
+                Text("Existe un envío pendiente o incierto. Se conservará el borrador para reintentar.")
+            },
+            confirmButton = {
+                Button(onClick = {
+                    confirmBack = false
+                    onBack()
+                }) {
+                    Text("Volver")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmBack = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }
 

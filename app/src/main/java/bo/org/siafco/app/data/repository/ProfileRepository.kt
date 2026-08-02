@@ -58,7 +58,7 @@ class ProfileRepository(
     override suspend fun updatePhoto(photo: PreparedPhoto): ProfileResult = safeCall {
         val part = MultipartBody.Part.createFormData(
             name = "photo",
-            filename = "profile-photo.jpg",
+            filename = photo.file.name,
             body = photo.file.asRequestBody("image/jpeg".toMediaType())
         )
         api.updateProfilePhoto(part).profileResult()

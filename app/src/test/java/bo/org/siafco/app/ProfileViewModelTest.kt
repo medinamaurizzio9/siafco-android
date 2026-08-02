@@ -82,6 +82,32 @@ class ProfileViewModelTest {
     }
 
     @Test
+    fun selectedPhotoStaysReadableForPreviewBeforeUpload() = runTest(dispatcher) {
+        val photo = photo()
+        val viewModel = ProfileViewModel(FakeProfileGateway())
+
+        viewModel.setPhoto(photo)
+
+        assertEquals(photo, viewModel.state.value.pendingPhoto)
+        assertTrue(photo.file.exists())
+        assertTrue(photo.file.canRead())
+    }
+
+    @Test
+    fun replacingPendingPhotoClearsOnlyPreviousProcessedFile() = runTest(dispatcher) {
+        val first = photo()
+        val second = photo()
+        val viewModel = ProfileViewModel(FakeProfileGateway())
+
+        viewModel.setPhoto(first)
+        viewModel.setPhoto(second)
+
+        assertFalse(first.file.exists())
+        assertTrue(second.file.exists())
+        assertEquals(second, viewModel.state.value.pendingPhoto)
+    }
+
+    @Test
     fun savePhotoNetworkErrorKeepsTemporaryPhotoAndSession() = runTest(dispatcher) {
         val photo = photo()
         val gateway = FakeProfileGateway(photoResult = ProfileResult.NetworkError)

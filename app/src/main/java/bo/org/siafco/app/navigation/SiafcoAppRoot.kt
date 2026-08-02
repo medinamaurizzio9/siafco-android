@@ -101,7 +101,12 @@ fun SiafcoAppRoot(container: AppContainer, navController: NavHostController = re
             val viewModel: ProfileViewModel = viewModel(factory = factory)
             ProfileScreen(
                 viewModel = viewModel,
-                onBack = { navController.popBackStack() },
+                onBack = {
+                    navController.navigate(Routes.Home) {
+                        popUpTo<Routes.Profile> { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
                 onLoggedOut = {
                     navController.navigate(Routes.Login) {
                         popUpTo<Routes.Home> { inclusive = true }
@@ -113,7 +118,12 @@ fun SiafcoAppRoot(container: AppContainer, navController: NavHostController = re
             val viewModel: PaymentViewModel = viewModel(factory = factory)
             PaymentScreen(
                 viewModel = viewModel,
-                onBack = { navController.popBackStack() },
+                onBack = {
+                    navController.navigate(Routes.Home) {
+                        popUpTo<Routes.Payment> { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
                 onSubmitted = {
                     navController.navigate(Routes.Home) {
                         popUpTo<Routes.Home> { inclusive = true }

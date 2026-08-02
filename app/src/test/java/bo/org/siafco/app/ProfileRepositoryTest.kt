@@ -74,8 +74,9 @@ class ProfileRepositoryTest {
     @Test
     fun updatePhotoUsesPostMultipartPhotoPart() = runTest {
         server.enqueue(jsonResponse(PROFILE_JSON))
+        val photo = photo()
 
-        val result = repository.updatePhoto(photo())
+        val result = repository.updatePhoto(photo)
 
         assertTrue(result is ProfileResult.Success)
         val request = server.takeRequest()
@@ -84,8 +85,21 @@ class ProfileRepositoryTest {
         assertTrue(request.headers["Content-Type"].orEmpty().startsWith("multipart/form-data"))
         val body = request.body!!.utf8()
         assertTrue(body.contains("name=\"photo\""))
-        assertTrue(body.contains("filename=\"profile-photo.jpg\""))
+        assertTrue(body.contains("filename=\"${photo.file.name}\""))
         assertFalse(body.contains("_method"))
+    }
+
+    @Test
+    fun loadPreservesAffiliatePhotoUrlFromBackend() = runTest {
+        server.enqueue(jsonResponse(PROFILE_JSON_WITH_PHOTO))
+
+        val result = repository.load()
+
+        assertTrue(result is ProfileResult.Success)
+        assertEquals(
+            "http://127.0.0.1:8000/storage/affiliates/photos/profile-photo.jpg",
+            (result as ProfileResult.Success).profile.photoUrl
+        )
     }
 
     @Test
@@ -170,6 +184,42 @@ class ProfileRepositoryTest {
                     "plan": {"name":"Plan base","type":"regular","currency":"BOB","affiliation_fee":100,"credential_fee":30,"total_amount":130}
                   },
                   "allowed_profile_fields": ["phone","email","address","birth_date","marital_status"]
+                }
+              }
+            }
+        """
+
+        private const val PROFILE_JSON_WITH_PHOTO = """
+            {
+              "success": true,
+              "message": "Perfil cargado.",
+              "data": {
+                "profile": {
+                  "user": {
+                    "name": "Afiliado Demo",
+                    "email": "profile@siafco.test",
+                    "role": "afiliado",
+                    "user_type": "affiliate",
+                    "must_change_password": false,
+                    "is_active": true,
+                    "last_login_at": null
+                  },
+                  "affiliate": {
+                    "full_name": "Afiliado Demo",
+                    "ci": "90010001",
+                    "phone": "76543210",
+                    "email": "profile@siafco.test",
+                    "address": "Nueva direccion",
+                    "birth_date": "1990-05-15",
+                    "marital_status": "CASADO",
+                    "photo_url": "http://127.0.0.1:8000/storage/affiliates/photos/profile-photo.jpg",
+                    "registration_number": "MAG-1",
+                    "status": "activo",
+                    "status_label": "Activo",
+                    "sector": {"name":"Magisterio","code":"MAG","regional":"LA PAZ","institution":"Institucion"},
+                    "plan": {"name":"Plan base","type":"regular","currency":"BOB","affiliation_fee":100,"total_amount":130}
+                  },
+                  "allowed_profile_fields": ["phone","email","address","birth_date","marital_status","photo"]
                 }
               }
             }

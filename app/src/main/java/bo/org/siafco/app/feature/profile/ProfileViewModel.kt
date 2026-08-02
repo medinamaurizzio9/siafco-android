@@ -47,6 +47,14 @@ class ProfileViewModel(private val repository: ProfileGateway) : ViewModel() {
         _state.value = _state.value.copy(pendingPhoto = photo, fieldErrors = emptyMap(), message = null)
     }
 
+    fun onPhotoError(message: String) {
+        _state.value = _state.value.copy(
+            savingPhoto = false,
+            fieldErrors = mapOf("photo" to message),
+            messageText = message
+        )
+    }
+
     fun saveProfile() {
         val current = _state.value
         if (current.savingProfile) return

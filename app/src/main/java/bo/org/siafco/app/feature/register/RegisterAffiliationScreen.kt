@@ -1,8 +1,6 @@
 package bo.org.siafco.app.feature.register
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -40,11 +39,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -55,8 +52,8 @@ import bo.org.siafco.app.R
 import bo.org.siafco.app.domain.CatalogOption
 import bo.org.siafco.app.domain.CatalogPlan
 import bo.org.siafco.app.domain.CatalogSector
+import bo.org.siafco.app.feature.photo.PhotoInputFlow
 import coil3.compose.rememberAsyncImagePainter
-import kotlinx.coroutines.launch
 
 @Composable
 fun RegisterAffiliationScreen(
@@ -65,17 +62,19 @@ fun RegisterAffiliationScreen(
     onBackToLogin: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val invalidPhotoMessage = stringResource(R.string.register_photo_invalid)
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) {
-            scope.launch {
-                PhotoPreparer.prepare(context, uri)
-                    .onSuccess(viewModel::onPhotoPrepared)
-                    .onFailure { viewModel.onPhotoError(it.message ?: invalidPhotoMessage) }
-            }
+    var photoFlowVisible by remember { mutableStateOf(false) }
+    var confirmExit by remember { mutableStateOf(false) }
+
+    fun requestBack() {
+        when (RegisterBackPolicy.decide(state.step)) {
+            RegisterBackDecision.ConfirmExit -> confirmExit = true
+            RegisterBackDecision.PreviousStep -> viewModel.previousStep()
         }
+    }
+
+    BackHandler(enabled = !state.submitting && !photoFlowVisible) {
+        requestBack()
     }
 
     LaunchedEffect(Unit) { viewModel.loadCatalogs() }
@@ -121,9 +120,7 @@ fun RegisterAffiliationScreen(
                             0 -> IdentityStep(state, viewModel)
                             1 -> ContactStep(state, viewModel)
                             2 -> InstitutionalStep(state, viewModel)
-                            3 -> PhotoStep(state, onPickPhoto = {
-                                picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                            })
+                            3 -> PhotoStep(state, onPickPhoto = { photoFlowVisible = true })
                             4 -> ConfirmationStep(state, viewModel)
                         }
                     }
@@ -132,12 +129,7 @@ fun RegisterAffiliationScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                 OutlinedButton(
                     onClick = {
-                        if (state.step == 0) {
-                            viewModel.clearSensitiveData()
-                            onBackToLogin()
-                        } else {
-                            viewModel.previousStep()
-                        }
+                        requestBack()
                     },
                     enabled = !state.submitting,
                     modifier = Modifier.weight(1f)
@@ -158,6 +150,33 @@ fun RegisterAffiliationScreen(
                 }
             }
         }
+    }
+    PhotoInputFlow(
+        visible = photoFlowVisible,
+        onDismiss = { photoFlowVisible = false },
+        onPrepared = viewModel::onPhotoPrepared,
+        onError = { viewModel.onPhotoError(it.ifBlank { invalidPhotoMessage }) }
+    )
+    if (confirmExit) {
+        AlertDialog(
+            onDismissRequest = { confirmExit = false },
+            title = { Text("Abandonar afiliación") },
+            text = { Text("Se borrará la contraseña y la fotografía temporal antes de volver al inicio de sesión.") },
+            confirmButton = {
+                Button(onClick = {
+                    confirmExit = false
+                    viewModel.clearSensitiveData()
+                    onBackToLogin()
+                }) {
+                    Text("Salir")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmExit = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }
 
@@ -271,12 +290,20 @@ private fun PhotoStep(state: RegisterAffiliationUiState, onPickPhoto: () -> Unit
                 .height(220.dp)
         )
         Text(text = it.displayName)
+        Text(text = "Resolución: ${it.width} × ${it.height} px", style = MaterialTheme.typography.bodySmall)
+        Text(text = "Tamaño optimizado: ${formatPhotoSize(it.sizeBytes)}", style = MaterialTheme.typography.bodySmall)
+        Text(text = "Esta fotografía se utilizará en tu perfil y credencial.", style = MaterialTheme.typography.bodySmall)
     }
     state.fieldErrors["photo"]?.let { Text(text = it, color = MaterialTheme.colorScheme.error) }
     OutlinedButton(onClick = onPickPhoto, modifier = Modifier.fillMaxWidth()) {
         Text(stringResource(R.string.register_pick_photo))
     }
     Text(text = stringResource(R.string.register_photo_help), style = MaterialTheme.typography.bodySmall)
+}
+
+private fun formatPhotoSize(sizeBytes: Long): String {
+    val kb = sizeBytes / 1024.0
+    return if (kb < 1024) "%.0f KB".format(kb) else "%.1f MB".format(kb / 1024.0)
 }
 
 @Composable

@@ -104,6 +104,7 @@
     <string name="profile_editable">Datos editables</string>
     <string name="profile_photo">Fotograf&#237;a</string>
     <string name="profile_upload_photo">Subir fotograf&#237;a</string>
+    <string name="profile_change_photo">Cambiar fotograf&#237;a</string>
     <string name="profile_security">Seguridad de cuenta</string>
     <string name="profile_password_help">La contrase&#241;a debe tener al menos 8 caracteres, letras y n&#250;meros.</string>
     <string name="profile_current_password">Contrase&#241;a actual</string>
