@@ -55,7 +55,10 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import retrofit2.Response
 import java.io.IOException
 
-class StoreRepository(private val api: SiafcoApi) : StoreGateway {
+class StoreRepository(
+    private val api: SiafcoApi,
+    private val onUnauthorized: suspend () -> Unit = {}
+) : StoreGateway {
     private val json = Json { ignoreUnknownKeys = true }
 
     override suspend fun catalog(filters: StoreCatalogFilters): StoreResult<StoreCatalog> = safeCall {
@@ -123,7 +126,7 @@ class StoreRepository(private val api: SiafcoApi) : StoreGateway {
         }
     }
 
-    private fun <T, R> Response<ApiEnvelope<T>>.toResult(mapper: (T) -> R): StoreResult<R> {
+    private suspend fun <T, R> Response<ApiEnvelope<T>>.toResult(mapper: (T) -> R): StoreResult<R> {
         if (isSuccessful) {
             val payload = body()?.data
             return if (body()?.success == true && payload != null) {
@@ -135,7 +138,10 @@ class StoreRepository(private val api: SiafcoApi) : StoreGateway {
 
         val error = parseError()
         return when (code()) {
-            401 -> StoreResult.Unauthorized
+            401 -> {
+                onUnauthorized()
+                StoreResult.Unauthorized
+            }
             403 -> StoreResult.Forbidden(error?.message)
             404 -> StoreResult.NotFound(error?.message)
             409 -> StoreResult.Conflict(error?.message)

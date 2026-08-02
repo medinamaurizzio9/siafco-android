@@ -52,6 +52,19 @@ class AuthRepositoryTest {
     }
 
     @Test
+    fun successfulLoginClearsSessionScopedStoreDataBeforeSavingNewToken() = runTest {
+        var cleared = false
+        repository = AuthRepository(api = api(server), tokenStore = tokenStore, onSessionBoundary = { cleared = true })
+        server.enqueue(jsonResponse(loginJson(status = "activo", accessLevel = "full")))
+
+        val result = repository.login("otra@example.test", "Secret1234")
+
+        assertTrue(result is ApiResult.Success)
+        assertTrue(cleared)
+        assertEquals("token-123", tokenStore.getToken())
+    }
+
+    @Test
     fun activeProfileIsMappedAsFullAccess() = runTest {
         server.enqueue(jsonResponse(loginJson(status = "activo", accessLevel = "full")))
 
@@ -111,6 +124,20 @@ class AuthRepositoryTest {
     }
 
     @Test
+    fun expiredTokenAtStartupClearsSessionScopedStoreData() = runTest {
+        var cleared = false
+        repository = AuthRepository(api = api(server), tokenStore = tokenStore, onSessionBoundary = { cleared = true })
+        tokenStore.saveToken("expired")
+        server.enqueue(jsonResponse(errorJson(), code = 401))
+
+        val result = repository.validateSession()
+
+        assertEquals(401, (result as ApiResult.HttpError).code)
+        assertNull(tokenStore.getToken())
+        assertTrue(cleared)
+    }
+
+    @Test
     fun logoutCallsApiAndClearsToken() = runTest {
         tokenStore.saveToken("token")
         server.enqueue(jsonResponse("""{"success":true,"message":"OK","data":{}}"""))
@@ -119,6 +146,20 @@ class AuthRepositoryTest {
 
         assertTrue(result is ApiResult.Success)
         assertNull(tokenStore.getToken())
+    }
+
+    @Test
+    fun logoutClearsSessionScopedStoreData() = runTest {
+        var cleared = false
+        repository = AuthRepository(api = api(server), tokenStore = tokenStore, onSessionBoundary = { cleared = true })
+        tokenStore.saveToken("token")
+        server.enqueue(jsonResponse("""{"success":true,"message":"OK","data":{}}"""))
+
+        val result = repository.logout()
+
+        assertTrue(result is ApiResult.Success)
+        assertNull(tokenStore.getToken())
+        assertTrue(cleared)
     }
 
     @Test

@@ -16,6 +16,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -122,6 +123,20 @@ class ProfileRepositoryTest {
         val result = repository.updateProfile(ProfileUpdateForm(email = "profile@siafco.test", phone = "bad"))
 
         assertTrue(result is ProfileResult.UnknownError)
+    }
+
+    @Test
+    fun logoutAllClearsSessionScopedStoreData() = runTest {
+        var cleared = false
+        repository = ProfileRepository(api(server), tokenStore, onSessionBoundary = { cleared = true })
+        tokenStore.saveToken("token")
+        server.enqueue(jsonResponse("""{"success":true,"message":"OK","data":{}}"""))
+
+        val result = repository.logoutAll()
+
+        assertTrue(result is ProfileResult.LoggedOut)
+        assertTrue(cleared)
+        assertNull(tokenStore.getToken())
     }
 
     private fun api(server: MockWebServer): SiafcoApi {

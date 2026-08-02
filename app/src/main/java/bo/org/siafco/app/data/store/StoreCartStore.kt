@@ -27,7 +27,7 @@ class PreferencesStoreCartStore(context: Context) : StoreCartStore {
 
     override val lines: Flow<List<StoreCartLine>> = dataStore.data.map { preferences ->
         preferences[cartKey]?.let { raw ->
-            runCatching { json.decodeFromString<List<CartLineEntity>>(raw).map { it.toDomain() } }
+            runCatching { StoreCartSerializer.decode(raw, json) }
                 .getOrDefault(emptyList())
         }.orEmpty()
     }
@@ -35,15 +35,16 @@ class PreferencesStoreCartStore(context: Context) : StoreCartStore {
     override suspend fun add(line: StoreCartLine) {
         dataStore.edit { preferences ->
             val current = preferences.readLines(json)
-            preferences[cartKey] = json.encodeToString(StoreCartLogic.add(current, line).map { it.toEntity() })
+            preferences[cartKey] = StoreCartSerializer.encode(StoreCartLogic.add(current, line), json)
         }
     }
 
     override suspend fun updateQuantity(productPublicCode: String, variantPublicCode: String?, quantity: Int) {
         dataStore.edit { preferences ->
             val current = preferences.readLines(json)
-            preferences[cartKey] = json.encodeToString(
-                StoreCartLogic.updateQuantity(current, productPublicCode, variantPublicCode, quantity).map { it.toEntity() }
+            preferences[cartKey] = StoreCartSerializer.encode(
+                StoreCartLogic.updateQuantity(current, productPublicCode, variantPublicCode, quantity),
+                json
             )
         }
     }
@@ -51,9 +52,9 @@ class PreferencesStoreCartStore(context: Context) : StoreCartStore {
     override suspend fun remove(productPublicCode: String, variantPublicCode: String?) {
         dataStore.edit { preferences ->
             val current = preferences.readLines(json)
-            preferences[cartKey] = json.encodeToString(
-                current.filterNot { it.productPublicCode == productPublicCode && it.variantPublicCode == variantPublicCode }
-                    .map { it.toEntity() }
+            preferences[cartKey] = StoreCartSerializer.encode(
+                current.filterNot { it.productPublicCode == productPublicCode && it.variantPublicCode == variantPublicCode },
+                json
             )
         }
     }
@@ -64,7 +65,7 @@ class PreferencesStoreCartStore(context: Context) : StoreCartStore {
 
     private fun androidx.datastore.preferences.core.Preferences.readLines(json: Json): List<StoreCartLine> {
         return this[cartKey]?.let { raw ->
-            runCatching { json.decodeFromString<List<CartLineEntity>>(raw).map { it.toDomain() } }
+            runCatching { StoreCartSerializer.decode(raw, json) }
                 .getOrDefault(emptyList())
         }.orEmpty()
     }
@@ -72,6 +73,13 @@ class PreferencesStoreCartStore(context: Context) : StoreCartStore {
     private companion object {
         val cartKey = stringPreferencesKey("lines")
     }
+}
+
+object StoreCartSerializer {
+    fun encode(lines: List<StoreCartLine>, json: Json = Json): String = json.encodeToString(lines.map { it.toEntity() })
+
+    fun decode(raw: String, json: Json = Json): List<StoreCartLine> =
+        json.decodeFromString<List<CartLineEntity>>(raw).map { it.toDomain() }
 }
 
 object StoreCartLogic {

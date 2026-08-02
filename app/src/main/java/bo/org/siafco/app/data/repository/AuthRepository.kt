@@ -15,7 +15,8 @@ import java.io.IOException
 
 class AuthRepository(
     private val api: SiafcoApi,
-    private val tokenStore: TokenStore
+    private val tokenStore: TokenStore,
+    private val onSessionBoundary: suspend () -> Unit = {}
 ) : AuthGateway {
     val token: Flow<String?> = tokenStore.token
 
@@ -25,6 +26,7 @@ class AuthRepository(
             val body = response.body()
             val payload = body?.data
             if (body?.success == true && payload != null) {
+                onSessionBoundary()
                 tokenStore.saveToken(payload.accessToken)
                 ApiResult.Success(payload.profile.toSessionProfile("login"))
             } else {
@@ -48,7 +50,7 @@ class AuthRepository(
                 ApiResult.UnknownError
             }
         } else {
-            if (response.code() == 401) tokenStore.clearToken()
+            if (response.code() == 401) clearSessionBoundary()
             response.toHttpError()
         }
     }
@@ -69,7 +71,7 @@ class AuthRepository(
 
     override suspend fun logout(): ApiResult<Unit> = safeCall {
         val response = api.logout()
-        tokenStore.clearToken()
+        clearSessionBoundary()
         if (response.isSuccessful) {
             ApiResult.Success(Unit)
         } else {
@@ -78,7 +80,12 @@ class AuthRepository(
     }
 
     override suspend fun clearLocalSession() {
+        clearSessionBoundary()
+    }
+
+    private suspend fun clearSessionBoundary() {
         tokenStore.clearToken()
+        onSessionBoundary()
     }
 
     private suspend fun <T> safeCall(block: suspend () -> ApiResult<T>): ApiResult<T> {

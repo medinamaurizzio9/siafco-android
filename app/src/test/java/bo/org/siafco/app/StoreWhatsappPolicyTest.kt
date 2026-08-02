@@ -9,10 +9,13 @@ class StoreWhatsappPolicyTest {
     @Test
     fun acceptsOnlyExpectedWhatsappHttpsUrls() {
         assertNotNull(StoreWhatsappPolicy.validate("https://wa.me/59170000000?text=Pedido"))
-        assertNotNull(StoreWhatsappPolicy.validate("https://api.whatsapp.com/send?phone=59170000000&text=Pedido"))
+        assertNull(StoreWhatsappPolicy.validate("https://api.whatsapp.com/send?phone=59170000000&text=Pedido"))
         assertNull(StoreWhatsappPolicy.validate("http://wa.me/59170000000"))
         assertNull(StoreWhatsappPolicy.validate("https://fake-wa.me/59170000000"))
+        assertNull(StoreWhatsappPolicy.validate("https://fake.wa.me/59170000000"))
+        assertNull(StoreWhatsappPolicy.validate("https://wa.me.evil.test/59170000000"))
         assertNull(StoreWhatsappPolicy.validate("https://user:pass@wa.me/59170000000"))
+        assertNull(StoreWhatsappPolicy.validate("https://wa.me:8443/59170000000"))
         assertNull(StoreWhatsappPolicy.validate("javascript:alert(1)"))
         assertNull(StoreWhatsappPolicy.validate("file:///tmp/a"))
         assertNull(StoreWhatsappPolicy.validate("content://provider/a"))

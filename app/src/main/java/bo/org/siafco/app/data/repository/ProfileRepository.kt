@@ -20,7 +20,8 @@ import java.io.IOException
 
 class ProfileRepository(
     private val api: SiafcoApi,
-    private val tokenStore: TokenStore
+    private val tokenStore: TokenStore,
+    private val onSessionBoundary: suspend () -> Unit = {}
 ) : ProfileGateway {
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -77,7 +78,7 @@ class ProfileRepository(
     override suspend fun logoutAll(): ProfileResult {
         return try {
             val response = api.logoutAll()
-            tokenStore.clearToken()
+            clearSessionBoundary()
             if (response.isSuccessful) {
                 ProfileResult.LoggedOut
             } else {
@@ -91,7 +92,12 @@ class ProfileRepository(
     }
 
     override suspend fun clearLocalSession() {
+        clearSessionBoundary()
+    }
+
+    private suspend fun clearSessionBoundary() {
         tokenStore.clearToken()
+        onSessionBoundary()
     }
 
     private suspend fun safeCall(block: suspend () -> ProfileResult): ProfileResult {

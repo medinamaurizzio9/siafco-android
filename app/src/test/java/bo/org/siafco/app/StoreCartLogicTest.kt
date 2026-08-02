@@ -1,6 +1,7 @@
 package bo.org.siafco.app
 
 import bo.org.siafco.app.data.store.StoreCartLogic
+import bo.org.siafco.app.data.store.StoreCartSerializer
 import bo.org.siafco.app.domain.StoreCartLine
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -37,5 +38,19 @@ class StoreCartLogicTest {
 
         assertEquals(99, updated.first().quantity)
         assertTrue(StoreCartLogic.updateQuantity(updated, "PROD-1", null, 0).isEmpty())
+    }
+
+    @Test
+    fun serializedCartContainsOnlyPublicCodesVariantAndQuantity() {
+        val raw = StoreCartSerializer.encode(listOf(StoreCartLine("PROD-1", "VAR-1", 2)))
+
+        assertTrue(raw.contains("productPublicCode"))
+        assertTrue(raw.contains("variantPublicCode"))
+        assertTrue(raw.contains("quantity"))
+        assertTrue(!raw.contains("price", ignoreCase = true))
+        assertTrue(!raw.contains("coupon", ignoreCase = true))
+        assertTrue(!raw.contains("address", ignoreCase = true))
+        assertTrue(!raw.contains("total", ignoreCase = true))
+        assertEquals(listOf(StoreCartLine("PROD-1", "VAR-1", 2)), StoreCartSerializer.decode(raw))
     }
 }

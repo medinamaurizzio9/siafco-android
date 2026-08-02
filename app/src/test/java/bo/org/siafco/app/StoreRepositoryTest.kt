@@ -129,6 +129,18 @@ class StoreRepositoryTest {
         assertTrue(repository.catalog() is StoreResult.NetworkError)
     }
 
+    @Test
+    fun unauthorizedStoreResponseRunsSessionCleanup() = runTest {
+        var cleaned = false
+        repository = StoreRepository(api(server), onUnauthorized = { cleaned = true })
+        server.enqueue(jsonResponse("""{"success":false,"message":"No autenticado","errors":{}}""", 401))
+
+        val result = repository.catalog()
+
+        assertTrue(result is StoreResult.Unauthorized)
+        assertTrue(cleaned)
+    }
+
     private fun api(server: MockWebServer): SiafcoApi {
         val json = Json {
             ignoreUnknownKeys = true

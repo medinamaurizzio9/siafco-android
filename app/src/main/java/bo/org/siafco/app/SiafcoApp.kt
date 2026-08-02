@@ -29,15 +29,20 @@ class SiafcoApp : Application() {
         )
         val api = NetworkModule.createApi(tokenStore)
         val paymentRepository = PaymentRepository(api)
-        val profileRepository = ProfileRepository(api, tokenStore)
-        val credentialRepository = CredentialRepository(api, tokenStore)
         val storeCartStore = PreferencesStoreCartStore(this)
         val pendingOrderStore = PreferencesStorePendingOrderStore(this)
+        val clearStoreSessionData: suspend () -> Unit = {
+            storeCartStore.clear()
+            pendingOrderStore.clear()
+        }
+        val profileRepository = ProfileRepository(api, tokenStore, clearStoreSessionData)
+        val credentialRepository = CredentialRepository(api, tokenStore)
         container = AppContainer(
             tokenStore = tokenStore,
             authRepository = AuthRepository(
                 api = api,
-                tokenStore = tokenStore
+                tokenStore = tokenStore,
+                onSessionBoundary = clearStoreSessionData
             ),
             affiliationRepository = AffiliationRepository(
                 api = api,
@@ -46,7 +51,13 @@ class SiafcoApp : Application() {
             paymentRepository = paymentRepository,
             profileRepository = profileRepository,
             credentialRepository = credentialRepository,
-            storeRepository = StoreRepository(api),
+            storeRepository = StoreRepository(
+                api = api,
+                onUnauthorized = {
+                    tokenStore.clearToken()
+                    clearStoreSessionData()
+                }
+            ),
             storeCartStore = storeCartStore,
             pendingOrderStore = pendingOrderStore,
             pendingPaymentStore = EncryptedPendingPaymentStore(this)
