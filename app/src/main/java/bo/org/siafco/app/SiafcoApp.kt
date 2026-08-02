@@ -6,11 +6,16 @@ import bo.org.siafco.app.core.data.SecureTokenStore
 import bo.org.siafco.app.core.crypto.AndroidKeyStoreTokenCipher
 import bo.org.siafco.app.core.network.NetworkModule
 import bo.org.siafco.app.data.payment.EncryptedPendingPaymentStore
+import bo.org.siafco.app.data.store.PreferencesStoreCartStore
+import bo.org.siafco.app.data.store.PreferencesStorePendingOrderStore
+import bo.org.siafco.app.data.store.StoreCartStore
+import bo.org.siafco.app.data.store.StorePendingOrderStore
 import bo.org.siafco.app.data.repository.AffiliationRepository
 import bo.org.siafco.app.data.repository.AuthRepository
 import bo.org.siafco.app.data.repository.CredentialRepository
 import bo.org.siafco.app.data.repository.PaymentRepository
 import bo.org.siafco.app.data.repository.ProfileRepository
+import bo.org.siafco.app.data.repository.StoreRepository
 
 class SiafcoApp : Application() {
     lateinit var container: AppContainer
@@ -26,6 +31,8 @@ class SiafcoApp : Application() {
         val paymentRepository = PaymentRepository(api)
         val profileRepository = ProfileRepository(api, tokenStore)
         val credentialRepository = CredentialRepository(api, tokenStore)
+        val storeCartStore = PreferencesStoreCartStore(this)
+        val pendingOrderStore = PreferencesStorePendingOrderStore(this)
         container = AppContainer(
             tokenStore = tokenStore,
             authRepository = AuthRepository(
@@ -39,6 +46,9 @@ class SiafcoApp : Application() {
             paymentRepository = paymentRepository,
             profileRepository = profileRepository,
             credentialRepository = credentialRepository,
+            storeRepository = StoreRepository(api),
+            storeCartStore = storeCartStore,
+            pendingOrderStore = pendingOrderStore,
             pendingPaymentStore = EncryptedPendingPaymentStore(this)
         )
     }
@@ -51,5 +61,8 @@ data class AppContainer(
     val paymentRepository: PaymentRepository,
     val profileRepository: ProfileRepository,
     val credentialRepository: CredentialRepository,
+    val storeRepository: StoreRepository,
+    val storeCartStore: StoreCartStore,
+    val pendingOrderStore: StorePendingOrderStore,
     val pendingPaymentStore: bo.org.siafco.app.data.payment.PendingPaymentStore
 )

@@ -7,6 +7,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import bo.org.siafco.app.AppContainer
 import bo.org.siafco.app.feature.auth.LoginScreen
 import bo.org.siafco.app.feature.credential.CredentialScreen
@@ -24,6 +25,20 @@ import bo.org.siafco.app.feature.request.AffiliationRequestScreen
 import bo.org.siafco.app.feature.request.AffiliationRequestViewModel
 import bo.org.siafco.app.feature.splash.SplashScreen
 import bo.org.siafco.app.feature.splash.SplashViewModel
+import bo.org.siafco.app.feature.store.StoreCartScreen
+import bo.org.siafco.app.feature.store.StoreCartViewModel
+import bo.org.siafco.app.feature.store.StoreCatalogScreen
+import bo.org.siafco.app.feature.store.StoreCatalogViewModel
+import bo.org.siafco.app.feature.store.StoreCheckoutScreen
+import bo.org.siafco.app.feature.store.StoreCheckoutViewModel
+import bo.org.siafco.app.feature.store.StoreOrderDetailScreen
+import bo.org.siafco.app.feature.store.StoreOrderDetailViewModel
+import bo.org.siafco.app.feature.store.StoreOrdersScreen
+import bo.org.siafco.app.feature.store.StoreOrdersViewModel
+import bo.org.siafco.app.feature.store.StoreProductScreen
+import bo.org.siafco.app.feature.store.StoreProductViewModel
+import bo.org.siafco.app.feature.store.StoreReceiptScreen
+import bo.org.siafco.app.feature.store.StoreReceiptViewModel
 
 @Composable
 fun SiafcoAppRoot(container: AppContainer, navController: NavHostController = rememberNavController()) {
@@ -34,6 +49,9 @@ fun SiafcoAppRoot(container: AppContainer, navController: NavHostController = re
             container.paymentRepository,
             container.profileRepository,
             container.credentialRepository,
+            container.storeRepository,
+            container.storeCartStore,
+            container.pendingOrderStore,
             container.pendingPaymentStore
         )
     }
@@ -100,6 +118,12 @@ fun SiafcoAppRoot(container: AppContainer, navController: NavHostController = re
                 },
                 onSubmitPayment = {
                     navController.navigate(Routes.Payment)
+                },
+                onOpenStore = {
+                    navController.navigate(Routes.Store)
+                },
+                onOpenStoreOrders = {
+                    navController.navigate(Routes.StoreOrders)
                 },
                 onLoggedOut = {
                     navController.navigate(Routes.Login) {
@@ -173,5 +197,81 @@ fun SiafcoAppRoot(container: AppContainer, navController: NavHostController = re
                 }
             )
         }
+        composable<Routes.Store> {
+            val viewModel: StoreCatalogViewModel = viewModel(factory = factory)
+            StoreCatalogScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() },
+                onLoggedOut = { navController.toLoginFromHome() },
+                onOpenProduct = { navController.navigate(Routes.StoreProduct(it)) },
+                onOpenCart = { navController.navigate(Routes.StoreCart) }
+            )
+        }
+        composable<Routes.StoreProduct> { entry ->
+            val route = entry.toRoute<Routes.StoreProduct>()
+            val viewModel: StoreProductViewModel = viewModel(factory = factory)
+            StoreProductScreen(
+                viewModel = viewModel,
+                publicCode = route.publicCode,
+                onBack = { navController.popBackStack() },
+                onLoggedOut = { navController.toLoginFromHome() },
+                onOpenCart = { navController.navigate(Routes.StoreCart) }
+            )
+        }
+        composable<Routes.StoreCart> {
+            val viewModel: StoreCartViewModel = viewModel(factory = factory)
+            StoreCartScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() },
+                onLoggedOut = { navController.toLoginFromHome() },
+                onCheckout = { navController.navigate(Routes.StoreCheckout) }
+            )
+        }
+        composable<Routes.StoreCheckout> {
+            val viewModel: StoreCheckoutViewModel = viewModel(factory = factory)
+            StoreCheckoutScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() },
+                onLoggedOut = { navController.toLoginFromHome() },
+                onCreated = { navController.navigate(Routes.StoreOrderDetail(it)) }
+            )
+        }
+        composable<Routes.StoreOrders> {
+            val viewModel: StoreOrdersViewModel = viewModel(factory = factory)
+            StoreOrdersScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() },
+                onLoggedOut = { navController.toLoginFromHome() },
+                onOpenOrder = { navController.navigate(Routes.StoreOrderDetail(it)) }
+            )
+        }
+        composable<Routes.StoreOrderDetail> { entry ->
+            val route = entry.toRoute<Routes.StoreOrderDetail>()
+            val viewModel: StoreOrderDetailViewModel = viewModel(factory = factory)
+            StoreOrderDetailScreen(
+                viewModel = viewModel,
+                orderCode = route.orderCode,
+                onBack = { navController.popBackStack() },
+                onLoggedOut = { navController.toLoginFromHome() },
+                onUploadReceipt = { navController.navigate(Routes.StoreReceipt(it)) }
+            )
+        }
+        composable<Routes.StoreReceipt> { entry ->
+            val route = entry.toRoute<Routes.StoreReceipt>()
+            val viewModel: StoreReceiptViewModel = viewModel(factory = factory)
+            StoreReceiptScreen(
+                viewModel = viewModel,
+                orderCode = route.orderCode,
+                onBack = { navController.popBackStack() },
+                onLoggedOut = { navController.toLoginFromHome() },
+                onSubmitted = { navController.popBackStack() }
+            )
+        }
+    }
+}
+
+private fun NavHostController.toLoginFromHome() {
+    navigate(Routes.Login) {
+        popUpTo<Routes.Home> { inclusive = true }
     }
 }

@@ -40,6 +40,8 @@ fun HomeScreen(
     onOpenAffiliationRequest: () -> Unit,
     onOpenCredential: () -> Unit,
     onSubmitPayment: () -> Unit,
+    onOpenStore: () -> Unit,
+    onOpenStoreOrders: () -> Unit,
     onLoggedOut: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
@@ -128,6 +130,20 @@ fun HomeScreen(
                         enabled = state.capabilities.canSubmitPayment
                     ) {
                         Text(stringResource(R.string.home_payment_submit))
+                    }
+                    OutlinedButton(
+                        onClick = onOpenStore,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = profile?.affiliateStatus == "activo" && profile.accessLevel == AccessLevel.Active
+                    ) {
+                        Text(stringResource(R.string.home_store))
+                    }
+                    OutlinedButton(
+                        onClick = onOpenStoreOrders,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = profile?.affiliateStatus == "activo" && profile.accessLevel == AccessLevel.Active
+                    ) {
+                        Text(stringResource(R.string.home_store_orders))
                     }
                     state.affiliationRequest?.paymentDisabledReason()?.let {
                         Text(text = it, color = MaterialTheme.colorScheme.secondary)
