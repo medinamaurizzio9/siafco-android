@@ -255,3 +255,244 @@ data class AffiliatePlanDto(
     @SerialName("credential_fee") val credentialFee: Double? = null,
     @SerialName("total_amount") val totalAmount: Double? = null
 )
+
+@Serializable
+data class StoreCatalogPayload(
+    val settings: StoreSettingsDto,
+    val featured: List<StoreProductDto> = emptyList(),
+    val categories: List<StoreCategoryDto> = emptyList(),
+    val products: List<StoreProductDto> = emptyList(),
+    val pagination: StorePaginationDto
+)
+
+@Serializable
+data class StoreProductPayload(val product: StoreProductDto)
+
+@Serializable
+data class StoreQuotePayload(val quote: StoreQuoteDto)
+
+@Serializable
+data class StoreOrderPayload(val order: StoreOrderDto, val receipt: StoreReceiptDto? = null)
+
+@Serializable
+data class StoreOrdersPayload(
+    val orders: List<StoreOrderDto> = emptyList(),
+    val pagination: StorePaginationDto
+)
+
+@Serializable
+data class StoreWhatsappPayload(val whatsapp: StoreWhatsappDto)
+
+@Serializable
+data class StoreSettingsDto(
+    val currency: String = "BOB",
+    @SerialName("pickup_enabled") val pickupEnabled: Boolean = false,
+    @SerialName("shipping_enabled") val shippingEnabled: Boolean = false,
+    @SerialName("pickup_instructions") val pickupInstructions: String? = null,
+    @SerialName("shipping_instructions") val shippingInstructions: String? = null,
+    val payment: StorePaymentSettingsDto? = null,
+    @SerialName("whatsapp_enabled") val whatsappEnabled: Boolean = false
+)
+
+@Serializable
+data class StorePaymentSettingsDto(
+    @SerialName("qr_url") val qrUrl: String? = null,
+    val bank: String? = null,
+    val holder: String? = null,
+    val account: String? = null,
+    val instructions: String? = null
+)
+
+@Serializable
+data class StoreCategoryDto(val slug: String, val name: String)
+
+@Serializable
+data class StoreProductDto(
+    @SerialName("public_code") val publicCode: String,
+    val slug: String? = null,
+    val sku: String? = null,
+    val name: String,
+    @SerialName("short_description") val shortDescription: String? = null,
+    val description: String? = null,
+    @SerialName("regular_price") val regularPrice: String,
+    @SerialName("affiliate_price") val affiliatePrice: String,
+    @SerialName("effective_price") val effectivePrice: String,
+    @SerialName("promo_price") val promoPrice: String? = null,
+    val currency: String = "BOB",
+    @SerialName("availability_status") val availabilityStatus: String,
+    @SerialName("delivery_modes") val deliveryModes: List<String> = emptyList(),
+    val featured: Boolean = false,
+    @SerialName("max_quantity_per_order") val maxQuantityPerOrder: Int = 1,
+    @SerialName("primary_image_url") val primaryImageUrl: String? = null,
+    val category: StoreCategoryDto? = null,
+    val capabilities: StoreProductCapabilitiesDto? = null,
+    val images: List<StoreImageDto> = emptyList(),
+    val variants: List<StoreVariantDto> = emptyList()
+)
+
+@Serializable
+data class StoreProductCapabilitiesDto(@SerialName("can_order") val canOrder: Boolean = false)
+
+@Serializable
+data class StoreImageDto(
+    val url: String? = null,
+    val alt: String? = null,
+    @SerialName("is_primary") val isPrimary: Boolean = false
+)
+
+@Serializable
+data class StoreVariantDto(
+    @SerialName("public_code") val publicCode: String,
+    val name: String,
+    val type: String,
+    @SerialName("price_delta") val priceDelta: String,
+    @SerialName("effective_price") val effectivePrice: String
+)
+
+@Serializable
+data class StorePaginationDto(
+    @SerialName("current_page") val currentPage: Int = 1,
+    @SerialName("per_page") val perPage: Int = 15,
+    @SerialName("last_page") val lastPage: Int = 1,
+    val total: Int = 0
+)
+
+@Serializable
+data class StoreQuoteRequest(
+    val items: List<StoreQuoteItemRequest>,
+    @SerialName("delivery_method") val deliveryMethod: String,
+    val department: String? = null,
+    val city: String? = null,
+    val zone: String? = null,
+    @SerialName("delivery_address") val deliveryAddress: String? = null,
+    @SerialName("coupon_code") val couponCode: String? = null
+)
+
+@Serializable
+data class StoreQuoteItemRequest(
+    @SerialName("product_public_code") val productPublicCode: String,
+    @SerialName("variant_public_code") val variantPublicCode: String? = null,
+    val quantity: Int
+)
+
+@Serializable
+data class StoreQuoteDto(
+    val items: List<StoreQuoteItemDto> = emptyList(),
+    val subtotal: String,
+    @SerialName("discount_total") val discountTotal: String,
+    @SerialName("shipping_total") val shippingTotal: String,
+    val total: String,
+    val currency: String = "BOB",
+    val coupon: StoreCouponDto? = null,
+    val shipping: StoreShippingDto? = null,
+    @SerialName("expires_at") val expiresAt: String? = null
+)
+
+@Serializable
+data class StoreQuoteItemDto(
+    val product: StoreQuoteProductDto,
+    val variant: StoreQuoteVariantDto? = null,
+    val quantity: Int,
+    @SerialName("unit_price") val unitPrice: String,
+    @SerialName("line_total") val lineTotal: String,
+    @SerialName("price_reason") val priceReason: String? = null
+)
+
+@Serializable
+data class StoreQuoteProductDto(@SerialName("public_code") val publicCode: String, val name: String)
+
+@Serializable
+data class StoreQuoteVariantDto(@SerialName("public_code") val publicCode: String, val name: String, val type: String)
+
+@Serializable
+data class StoreCouponDto(val applied: Boolean = false, val hint: String? = null)
+
+@Serializable
+data class StoreShippingDto(
+    val method: String? = null,
+    val amount: String? = null,
+    val currency: String? = null,
+    val scope: String? = null,
+    val department: String? = null,
+    val city: String? = null,
+    val zone: String? = null
+)
+
+@Serializable
+data class StoreOrderDto(
+    val code: String,
+    val date: String? = null,
+    val status: String,
+    @SerialName("status_label") val statusLabel: String,
+    @SerialName("created_at") val createdAt: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
+    val total: String,
+    val currency: String = "BOB",
+    @SerialName("delivery_method") val deliveryMethod: String,
+    @SerialName("item_summary") val itemSummary: String? = null,
+    val capabilities: StoreOrderCapabilitiesDto,
+    val delivery: StoreDeliveryDto? = null,
+    val items: List<StoreOrderItemDto> = emptyList(),
+    val subtotal: String? = null,
+    @SerialName("discount_total") val discountTotal: String? = null,
+    @SerialName("shipping_total") val shippingTotal: String? = null,
+    val payment: StoreOrderPaymentDto? = null,
+    val receipts: List<StoreReceiptDto> = emptyList(),
+    @SerialName("status_history") val statusHistory: List<StoreStatusHistoryDto> = emptyList()
+)
+
+@Serializable
+data class StoreOrderCapabilitiesDto(
+    @SerialName("can_upload_receipt") val canUploadReceipt: Boolean = false,
+    @SerialName("can_open_whatsapp") val canOpenWhatsapp: Boolean = false,
+    @SerialName("can_cancel") val canCancel: Boolean = false,
+    @SerialName("can_view_receipt") val canViewReceipt: Boolean = false
+)
+
+@Serializable
+data class StoreDeliveryDto(
+    val method: String? = null,
+    val department: String? = null,
+    val city: String? = null,
+    val zone: String? = null,
+    val address: String? = null
+)
+
+@Serializable
+data class StoreOrderItemDto(
+    val sku: String? = null,
+    val name: String,
+    val variant: String? = null,
+    @SerialName("unit_price") val unitPrice: String,
+    val quantity: Int,
+    @SerialName("discount_total") val discountTotal: String? = null,
+    @SerialName("line_total") val lineTotal: String
+)
+
+@Serializable
+data class StoreOrderPaymentDto(val status: String? = null, val message: String? = null)
+
+@Serializable
+data class StoreReceiptDto(
+    @SerialName("public_code") val publicCode: String? = null,
+    val status: String? = null,
+    @SerialName("submitted_at") val submittedAt: String? = null,
+    @SerialName("reviewed_at") val reviewedAt: String? = null,
+    @SerialName("rejection_reason") val rejectionReason: String? = null,
+    @SerialName("mime_type") val mimeType: String? = null,
+    @SerialName("size_bytes") val sizeBytes: Long? = null
+)
+
+@Serializable
+data class StoreStatusHistoryDto(
+    @SerialName("from_status") val fromStatus: String? = null,
+    @SerialName("to_status") val toStatus: String,
+    @SerialName("changed_at") val changedAt: String? = null
+)
+
+@Serializable
+data class StoreWhatsappDto(
+    val url: String,
+    @SerialName("opened_at") val openedAt: String? = null,
+    @SerialName("message_preview") val messagePreview: String? = null
+)
