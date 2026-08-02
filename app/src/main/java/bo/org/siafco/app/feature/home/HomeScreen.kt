@@ -37,6 +37,7 @@ import java.util.Locale
 fun HomeScreen(
     viewModel: HomeViewModel,
     onOpenProfile: () -> Unit,
+    onOpenAffiliationRequest: () -> Unit,
     onSubmitPayment: () -> Unit,
     onLoggedOut: () -> Unit
 ) {
@@ -105,7 +106,7 @@ fun HomeScreen(
                         Text(stringResource(R.string.home_profile))
                     }
                     OutlinedButton(
-                        onClick = {},
+                        onClick = onOpenAffiliationRequest,
                         modifier = Modifier.fillMaxWidth(),
                         enabled = state.capabilities.canViewAffiliationRequest
                     ) {

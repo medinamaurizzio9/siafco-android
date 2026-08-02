@@ -18,6 +18,8 @@ import bo.org.siafco.app.feature.profile.ProfileScreen
 import bo.org.siafco.app.feature.profile.ProfileViewModel
 import bo.org.siafco.app.feature.register.RegisterAffiliationScreen
 import bo.org.siafco.app.feature.register.RegisterAffiliationViewModel
+import bo.org.siafco.app.feature.request.AffiliationRequestScreen
+import bo.org.siafco.app.feature.request.AffiliationRequestViewModel
 import bo.org.siafco.app.feature.splash.SplashScreen
 import bo.org.siafco.app.feature.splash.SplashViewModel
 
@@ -87,6 +89,9 @@ fun SiafcoAppRoot(container: AppContainer, navController: NavHostController = re
                 onOpenProfile = {
                     navController.navigate(Routes.Profile)
                 },
+                onOpenAffiliationRequest = {
+                    navController.navigate(Routes.AffiliationRequest)
+                },
                 onSubmitPayment = {
                     navController.navigate(Routes.Payment)
                 },
@@ -106,6 +111,26 @@ fun SiafcoAppRoot(container: AppContainer, navController: NavHostController = re
                         popUpTo<Routes.Profile> { inclusive = true }
                         launchSingleTop = true
                     }
+                },
+                onLoggedOut = {
+                    navController.navigate(Routes.Login) {
+                        popUpTo<Routes.Home> { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable<Routes.AffiliationRequest> {
+            val viewModel: AffiliationRequestViewModel = viewModel(factory = factory)
+            AffiliationRequestScreen(
+                viewModel = viewModel,
+                onBack = {
+                    navController.navigate(Routes.Home) {
+                        popUpTo<Routes.AffiliationRequest> { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onSubmitPayment = {
+                    navController.navigate(Routes.Payment)
                 },
                 onLoggedOut = {
                     navController.navigate(Routes.Login) {

@@ -111,4 +111,17 @@
     <string name="profile_new_password">Nueva contrase&#241;a</string>
     <string name="profile_change_password">Cambiar contrase&#241;a</string>
     <string name="profile_logout_all">Cerrar sesiones en todos los dispositivos</string>
+    <string name="request_payment_confirmed">Pago confirmado</string>
+    <string name="request_code">C&#243;digo de solicitud</string>
+    <string name="request_status">Estado</string>
+    <string name="request_description">Descripci&#243;n</string>
+    <string name="request_plan">Plan</string>
+    <string name="request_amount">Monto</string>
+    <string name="request_paid_amount">Monto pagado</string>
+    <string name="request_payment_status">Estado del pago</string>
+    <string name="request_transaction_number">N&#250;mero de transacci&#243;n</string>
+    <string name="request_payment_date">Fecha de pago</string>
+    <string name="request_observations">Observaciones</string>
+    <string name="request_payment_instructions_title">Instrucciones de pago</string>
+    <string name="request_payment_instructions">Instrucciones</string>
 </resources>

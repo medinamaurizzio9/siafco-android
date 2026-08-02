@@ -12,6 +12,7 @@ import bo.org.siafco.app.feature.home.HomeViewModel
 import bo.org.siafco.app.feature.payment.PaymentViewModel
 import bo.org.siafco.app.feature.profile.ProfileViewModel
 import bo.org.siafco.app.feature.register.RegisterAffiliationViewModel
+import bo.org.siafco.app.feature.request.AffiliationRequestViewModel
 import bo.org.siafco.app.feature.splash.SplashViewModel
 
 class SiafcoViewModelFactory(
@@ -35,6 +36,9 @@ class SiafcoViewModelFactory(
             }
             modelClass.isAssignableFrom(ProfileViewModel::class.java) -> {
                 ProfileViewModel(profileRepository)
+            }
+            modelClass.isAssignableFrom(AffiliationRequestViewModel::class.java) -> {
+                AffiliationRequestViewModel(authRepository)
             }
             else -> error("ViewModel no soportado: ${modelClass.name}")
         } as T
