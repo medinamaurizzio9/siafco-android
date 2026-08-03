@@ -77,7 +77,13 @@ class StoreRepositoryTest {
         )
 
         assertTrue(result is StoreResult.Success)
-        assertEquals("209.80", (result as StoreResult.Success).value.total)
+        val quote = (result as StoreResult.Success).value
+        assertEquals("209.80", quote.total)
+        assertEquals("Polera SIAFCO", quote.items.single().productName)
+        assertEquals("M", quote.items.single().variantName)
+        assertEquals(2, quote.items.single().quantity)
+        assertEquals("99.90", quote.items.single().unitPrice)
+        assertEquals("199.80", quote.items.single().lineTotal)
         val body = server.takeRequest().body!!.utf8()
         assertTrue(body.contains("product_public_code"))
         assertTrue(body.contains("variant_public_code"))

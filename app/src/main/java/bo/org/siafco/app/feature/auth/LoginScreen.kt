@@ -30,6 +30,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import bo.org.siafco.app.R
+import bo.org.siafco.app.core.ui.BrandHeader
 
 @Composable
 fun LoginScreen(
@@ -50,12 +51,7 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                text = stringResource(R.string.splash_title),
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
-            )
+            BrandHeader(logoSize = 112.dp)
             Spacer(Modifier.height(24.dp))
             Card(
                 modifier = Modifier.fillMaxWidth(),

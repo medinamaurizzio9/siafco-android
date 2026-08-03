@@ -32,7 +32,7 @@ class RegisterAffiliationViewModel(
                 )
                 AffiliationRepositoryResult.NetworkError -> _state.value.copy(
                     loadingCatalogs = false,
-                    message = "No hay conexion con SIAFCO."
+                    message = "No hay conexión con la cooperativa."
                 )
                 AffiliationRepositoryResult.RateLimited -> _state.value.copy(
                     loadingCatalogs = false,
@@ -131,7 +131,7 @@ class RegisterAffiliationViewModel(
                     _state.value = current.copy(
                         form = current.form.copy(password = "", passwordConfirmation = ""),
                         submitting = false,
-                        message = "No hay conexion con SIAFCO. Conservamos los datos no sensibles."
+                        message = "No hay conexión con la cooperativa. Conservamos los datos no sensibles."
                     )
                 }
                 else -> {

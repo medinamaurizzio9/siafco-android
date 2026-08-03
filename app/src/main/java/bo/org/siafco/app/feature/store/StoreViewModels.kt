@@ -19,6 +19,7 @@ import bo.org.siafco.app.domain.PreparedReceipt
 import bo.org.siafco.app.domain.StoreProduct
 import bo.org.siafco.app.domain.StoreQuote
 import bo.org.siafco.app.domain.StoreQuoteRequestData
+import bo.org.siafco.app.domain.StoreSettings
 import bo.org.siafco.app.feature.UiMessage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -217,20 +218,59 @@ class StoreCheckoutViewModel(
 ) : ViewModel() {
     private val _state = MutableStateFlow(StoreCheckoutUiState())
     val state: StateFlow<StoreCheckoutUiState> = _state.asStateFlow()
+    private var quoteVersion = 0
 
     init {
         viewModelScope.launch {
-            cart.lines.collectLatest { lines -> _state.update { it.copy(lines = lines) } }
+            cart.lines.collectLatest { lines ->
+                _state.update { it.copy(lines = lines) }
+                if (lines.isNotEmpty()) quote()
+            }
+        }
+        viewModelScope.launch {
+            when (val result = store.catalog(StoreCatalogFilters(perPage = 1))) {
+                is StoreResult.Success -> _state.update { it.copy(settings = result.value.settings) }
+                else -> Unit
+            }
         }
     }
 
     fun updateForm(block: StoreCheckoutForm.() -> StoreCheckoutForm) {
         _state.update { it.copy(form = it.form.block(), fieldErrors = emptyMap(), message = null) }
+        quote()
+    }
+
+    fun quote() {
+        val current = _state.value
+        if (current.lines.isEmpty()) return
+        val request = current.form.toRequest(current.lines)
+        val version = ++quoteVersion
+        viewModelScope.launch {
+            _state.update { it.copy(loadingQuote = true, message = null) }
+            when (val result = store.quote(request)) {
+                is StoreResult.Success -> if (version == quoteVersion) _state.update { it.copy(loadingQuote = false, quote = result.value) }
+                is StoreResult.ValidationError -> _state.update {
+                    if (version == quoteVersion) {
+                        it.copy(
+                            loadingQuote = false,
+                            quote = null,
+                            fieldErrors = result.errors.mapValues { entry -> entry.value.firstOrNull().orEmpty() },
+                            message = UiMessage.Validation
+                        )
+                    } else {
+                        it
+                    }
+                }
+                else -> if (version == quoteVersion) {
+                    _state.update { it.copy(loadingQuote = false, quote = null, message = result.toUiMessage(), loggedOut = result is StoreResult.Unauthorized) }
+                }
+            }
+        }
     }
 
     fun submit() {
         val current = _state.value
-        if (current.submitting || current.lines.isEmpty()) return
+        if (current.submitting || current.lines.isEmpty() || current.quote == null || current.loadingQuote) return
         viewModelScope.launch {
             _state.update { it.copy(submitting = true, message = null, fieldErrors = emptyMap()) }
             val request = current.form.toRequest(current.lines)
@@ -408,12 +448,17 @@ private fun StoreQuoteRequestData.signature(): String = storePayloadSignature(
 data class StoreCheckoutUiState(
     val lines: List<StoreCartLine> = emptyList(),
     val form: StoreCheckoutForm = StoreCheckoutForm(),
+    val settings: StoreSettings? = null,
+    val quote: StoreQuote? = null,
+    val loadingQuote: Boolean = false,
     val submitting: Boolean = false,
     val createdOrder: StoreOrder? = null,
     val fieldErrors: Map<String, String> = emptyMap(),
     val message: UiMessage? = null,
     val loggedOut: Boolean = false
-)
+) {
+    val canCreateOrder: Boolean get() = lines.isNotEmpty() && quote != null && !loadingQuote && !submitting
+}
 
 private fun StoreResult<*>.toUiMessage(): UiMessage = when (this) {
     StoreResult.Unauthorized -> UiMessage.Unauthorized

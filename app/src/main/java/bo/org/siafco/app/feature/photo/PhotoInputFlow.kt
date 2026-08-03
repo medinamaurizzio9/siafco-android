@@ -110,7 +110,7 @@ fun PhotoInputFlow(
                             PhotoFiles.clear(sourceFile)
                             sourceFilePath = null
                             cropUriText = null
-                            onError(it.message ?: "No se pudo leer la fotografÃ­a.")
+                            onError(it.message ?: "No se pudo leer la fotografía.")
                             onDismiss()
                         }
                 }

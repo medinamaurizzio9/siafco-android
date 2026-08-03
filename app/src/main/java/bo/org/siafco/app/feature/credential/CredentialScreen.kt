@@ -189,7 +189,7 @@ private fun LandscapeCredentialCard(
                 Spacer(Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = credential.institutionName.ifBlank { "SIAFCO" },
+                        text = credential.institutionName.ifBlank { "COOPERATIVA TIERRA BENDITA" },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Black,
                         color = Color.White

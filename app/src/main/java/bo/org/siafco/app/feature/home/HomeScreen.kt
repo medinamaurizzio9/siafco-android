@@ -27,6 +27,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import bo.org.siafco.app.R
+import bo.org.siafco.app.core.ui.BrandHeader
 import bo.org.siafco.app.domain.AccessLevel
 import bo.org.siafco.app.domain.AffiliationRequestSummary
 import bo.org.siafco.app.domain.paymentDisabledReason
@@ -70,6 +71,7 @@ fun HomeScreen(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    BrandHeader(logoSize = 96.dp)
                     Text(text = stringResource(R.string.home_greeting), style = MaterialTheme.typography.titleMedium)
                     Text(
                         text = profile?.name.orEmpty(),
