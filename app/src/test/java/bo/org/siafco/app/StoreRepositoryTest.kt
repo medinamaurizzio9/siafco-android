@@ -48,7 +48,11 @@ class StoreRepositoryTest {
         assertEquals("PROD-1", catalog.products.first().publicCode)
         assertEquals("120.00", catalog.products.first().regularPrice)
         assertEquals("99.90", catalog.products.first().effectivePrice)
-        assertEquals("http://10.0.2.2:8000/storage/store/products/polera.jpg?v=1", catalog.products.first().primaryImageUrl)
+        val product = catalog.products.first()
+        assertEquals("http://10.0.2.2:8000/storage/store/products/polera.jpg?v=1", product.primaryImageUrl)
+        assertEquals("disponible", product.availabilityStatus)
+        assertTrue(product.canOrder)
+        assertTrue(product.isAvailable)
 
         val request = server.takeRequest()
         assertEquals("/api/mobile/v1/store", request.url.encodedPath)
@@ -174,7 +178,7 @@ class StoreRepositoryTest {
               "effective_price":"99.90",
               "promo_price":"99.90",
               "currency":"BOB",
-              "availability_status":"available",
+              "availability_status":"disponible",
               "delivery_modes":["pickup","shipping"],
               "featured":true,
               "max_quantity_per_order":3,

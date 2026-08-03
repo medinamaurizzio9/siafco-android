@@ -50,7 +50,19 @@ data class StoreProduct(
     val images: List<StoreImage>,
     val variants: List<StoreVariant>
 ) {
-    val isAvailable: Boolean get() = availabilityStatus == "available" && canOrder
+    val hasVariants: Boolean get() = variants.isNotEmpty()
+    val isAvailable: Boolean get() = availabilityStatus == StoreAvailability.Available && canOrder
+    fun canAddToCart(selectedVariantPublicCode: String?, quantity: Int): Boolean =
+        isAvailable &&
+            (!hasVariants || !selectedVariantPublicCode.isNullOrBlank()) &&
+            quantity in 1..maxQuantityPerOrder.coerceAtLeast(1)
+}
+
+object StoreAvailability {
+    const val Available = "disponible"
+    const val SoldOut = "agotado"
+    const val ComingSoon = "proximamente"
+    const val Hidden = "oculto"
 }
 
 data class StoreImage(val url: String?, val alt: String?, val isPrimary: Boolean)

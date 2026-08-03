@@ -146,7 +146,15 @@
     <string name="store_product_title">Producto</string>
     <string name="store_variant">Variante</string>
     <string name="store_add_to_cart">Agregar al carrito</string>
+    <string name="store_adding_to_cart">Agregando...</string>
+    <string name="store_added_to_cart">Producto agregado al carrito.</string>
     <string name="store_go_to_cart">Ir al carrito</string>
+    <string name="store_go_to_cart_with_count">Ver carrito (%1$d)</string>
+    <string name="store_unavailable_sold_out">Producto agotado.</string>
+    <string name="store_unavailable_coming_soon">Disponible proximamente.</string>
+    <string name="store_unavailable_select_variant">Selecciona una variante.</string>
+    <string name="store_unavailable_generic">Producto no disponible.</string>
+    <string name="store_unavailable_max_quantity">Cantidad maxima alcanzada.</string>
     <string name="store_cart_title">Carrito</string>
     <string name="store_cart_empty">Tu carrito estÃ¡ vacÃ­o.</string>
     <string name="store_checkout">Continuar compra</string>

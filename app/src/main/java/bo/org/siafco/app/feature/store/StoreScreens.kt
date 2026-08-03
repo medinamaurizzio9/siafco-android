@@ -45,6 +45,11 @@ import bo.org.siafco.app.domain.StoreProduct
 import bo.org.siafco.app.domain.StoreQuote
 import bo.org.siafco.app.feature.UiMessage
 import bo.org.siafco.app.data.receipt.ReceiptPreparer
+import bo.org.siafco.app.feature.store.StoreProductDisabledReason.ComingSoon
+import bo.org.siafco.app.feature.store.StoreProductDisabledReason.MaxQuantityReached
+import bo.org.siafco.app.feature.store.StoreProductDisabledReason.SelectVariant
+import bo.org.siafco.app.feature.store.StoreProductDisabledReason.SoldOut
+import bo.org.siafco.app.feature.store.StoreProductDisabledReason.Unavailable
 import coil3.compose.AsyncImage
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -144,6 +149,7 @@ fun StoreProductScreen(
                 Text(product.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
                 Text("${product.currency} ${product.effectivePrice}", style = MaterialTheme.typography.titleLarge)
                 product.shortDescription?.let { Text(it) }
+                Text(product.availabilityStatus, style = MaterialTheme.typography.bodySmall)
                 if (product.variants.isNotEmpty()) {
                     Text(stringResource(R.string.store_variant), fontWeight = FontWeight.SemiBold)
                     product.variants.forEach { variant ->
@@ -157,20 +163,38 @@ fun StoreProductScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     OutlinedButton(onClick = { viewModel.setQuantity(state.quantity - 1) }) { Text("-") }
                     Text(state.quantity.toString(), style = MaterialTheme.typography.titleMedium)
-                    OutlinedButton(onClick = { viewModel.setQuantity(state.quantity + 1) }) { Text("+") }
+                    OutlinedButton(
+                        onClick = { viewModel.setQuantity(state.quantity + 1) },
+                        enabled = state.quantity < product.maxQuantityPerOrder
+                    ) { Text("+") }
                 }
-                Button(onClick = viewModel::addToCart, enabled = product.isAvailable, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.store_add_to_cart))
+                state.disabledReason?.let { reason ->
+                    if (!state.canAddToCart || reason == MaxQuantityReached) {
+                        Text(text = stringResource(reason.messageRes), color = MaterialTheme.colorScheme.error)
+                    }
+                }
+                Button(onClick = viewModel::addToCart, enabled = state.canAddToCart, modifier = Modifier.fillMaxWidth()) {
+                    Text(if (state.adding) stringResource(R.string.store_adding_to_cart) else stringResource(R.string.store_add_to_cart))
                 }
                 if (state.added) {
+                    Text(stringResource(R.string.store_added_to_cart))
                     OutlinedButton(onClick = onOpenCart, modifier = Modifier.fillMaxWidth()) {
-                        Text(stringResource(R.string.store_go_to_cart))
+                        Text(stringResource(R.string.store_go_to_cart_with_count, state.cartCount))
                     }
                 }
             }
         }
     }
 }
+
+private val StoreProductDisabledReason.messageRes: Int
+    get() = when (this) {
+        SoldOut -> R.string.store_unavailable_sold_out
+        ComingSoon -> R.string.store_unavailable_coming_soon
+        SelectVariant -> R.string.store_unavailable_select_variant
+        Unavailable -> R.string.store_unavailable_generic
+        MaxQuantityReached -> R.string.store_unavailable_max_quantity
+    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

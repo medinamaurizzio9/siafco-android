@@ -11,6 +11,7 @@ import bo.org.siafco.app.data.store.StoreCartStore
 import bo.org.siafco.app.data.store.StorePendingOrderStore
 import bo.org.siafco.app.data.store.storePayloadSignature
 import bo.org.siafco.app.domain.StoreCartLine
+import bo.org.siafco.app.domain.StoreAvailability
 import bo.org.siafco.app.domain.StoreCatalog
 import bo.org.siafco.app.domain.StoreOrder
 import bo.org.siafco.app.domain.StorePagination
@@ -71,13 +72,33 @@ class StoreProductViewModel(
     private val _state = MutableStateFlow(StoreProductUiState())
     val state: StateFlow<StoreProductUiState> = _state.asStateFlow()
 
+    init {
+        viewModelScope.launch {
+            cart.lines.collectLatest { lines ->
+                _state.update { it.copy(cartCount = lines.sumOf(StoreCartLine::quantity)) }
+            }
+        }
+    }
+
     fun load(publicCode: String) {
         if (_state.value.loading || _state.value.product?.publicCode == publicCode) return
         viewModelScope.launch {
-            _state.value = StoreProductUiState(loading = true)
+            _state.update { StoreProductUiState(loading = true, cartCount = it.cartCount) }
             when (val result = store.product(publicCode)) {
-                is StoreResult.Success -> _state.value = StoreProductUiState(product = result.value)
-                else -> _state.value = StoreProductUiState(message = result.toUiMessage(), loggedOut = result is StoreResult.Unauthorized)
+                is StoreResult.Success -> _state.update {
+                    it.copy(
+                        loading = false,
+                        product = result.value,
+                        selectedVariantPublicCode = null,
+                        quantity = 1.coerceAtMost(result.value.maxQuantityPerOrder.coerceAtLeast(1)),
+                        added = false,
+                        adding = false,
+                        message = null
+                    )
+                }
+                else -> _state.update {
+                    it.copy(loading = false, message = result.toUiMessage(), loggedOut = result is StoreResult.Unauthorized)
+                }
             }
         }
     }
@@ -91,11 +112,13 @@ class StoreProductViewModel(
     }
 
     fun addToCart() {
-        val product = _state.value.product ?: return
-        if (!product.isAvailable) return
+        val current = _state.value
+        val product = current.product ?: return
+        if (current.adding || !current.canAddToCart) return
+        _state.update { it.copy(adding = true) }
         viewModelScope.launch {
-            cart.add(StoreCartLine(product.publicCode, _state.value.selectedVariantPublicCode, _state.value.quantity))
-            _state.update { it.copy(added = true) }
+            cart.add(StoreCartLine(product.publicCode, current.selectedVariantPublicCode, current.quantity))
+            _state.update { it.copy(added = true, adding = false) }
         }
     }
 }
@@ -106,9 +129,35 @@ data class StoreProductUiState(
     val selectedVariantPublicCode: String? = null,
     val quantity: Int = 1,
     val added: Boolean = false,
+    val adding: Boolean = false,
+    val cartCount: Int = 0,
     val message: UiMessage? = null,
     val loggedOut: Boolean = false
-)
+) {
+    val canAddToCart: Boolean
+        get() = product?.canAddToCart(selectedVariantPublicCode, quantity) == true && !adding
+
+    val disabledReason: StoreProductDisabledReason?
+        get() {
+            val product = product ?: return null
+            return when {
+                product.availabilityStatus == StoreAvailability.SoldOut -> StoreProductDisabledReason.SoldOut
+                product.availabilityStatus == StoreAvailability.ComingSoon -> StoreProductDisabledReason.ComingSoon
+                product.availabilityStatus != StoreAvailability.Available || !product.canOrder -> StoreProductDisabledReason.Unavailable
+                product.hasVariants && selectedVariantPublicCode.isNullOrBlank() -> StoreProductDisabledReason.SelectVariant
+                quantity >= product.maxQuantityPerOrder -> StoreProductDisabledReason.MaxQuantityReached
+                else -> null
+            }
+        }
+}
+
+enum class StoreProductDisabledReason {
+    SoldOut,
+    ComingSoon,
+    SelectVariant,
+    Unavailable,
+    MaxQuantityReached
+}
 
 class StoreCartViewModel(
     private val store: StoreGateway,
