@@ -1,5 +1,6 @@
 package bo.org.siafco.app.domain
 
+import bo.org.siafco.app.core.text.HumanTextInputNormalizer
 import java.io.File
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -63,8 +64,8 @@ object PaymentValidator {
         val errors = linkedMapOf<String, String>()
         val transactionNumber = form.transactionNumber.trim()
         val paymentDate = form.paymentDate.trim()
-        val payerName = form.payerName.trim()
-        val bankName = form.bankName.trim()
+        val payerName = HumanTextInputNormalizer.forSubmit(form.payerName)
+        val bankName = HumanTextInputNormalizer.forSubmit(form.bankName)
         val receipt = form.receipt
 
         if (transactionNumber.isBlank()) {

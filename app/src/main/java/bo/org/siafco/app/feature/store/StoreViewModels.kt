@@ -2,6 +2,8 @@ package bo.org.siafco.app.feature.store
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import bo.org.siafco.app.core.text.HumanTextInputNormalizer
+import bo.org.siafco.app.core.text.TextInputNormalization
 import bo.org.siafco.app.data.repository.StoreCatalogFilters
 import bo.org.siafco.app.data.repository.StoreGateway
 import bo.org.siafco.app.data.repository.StoreResult
@@ -330,11 +332,11 @@ data class StoreCheckoutForm(
     fun toRequest(lines: List<StoreCartLine>): StoreQuoteRequestData = StoreQuoteRequestData(
         lines = lines,
         deliveryMethod = deliveryMethod,
-        department = department.takeIf { it.isNotBlank() },
-        city = city.takeIf { it.isNotBlank() },
-        zone = zone.takeIf { it.isNotBlank() },
-        deliveryAddress = deliveryAddress.takeIf { it.isNotBlank() },
-        couponCode = couponCode.takeIf { it.isNotBlank() }
+        department = HumanTextInputNormalizer.optionalForSubmit(department),
+        city = HumanTextInputNormalizer.optionalForSubmit(city),
+        zone = HumanTextInputNormalizer.optionalForSubmit(zone),
+        deliveryAddress = HumanTextInputNormalizer.optionalForSubmit(deliveryAddress),
+        couponCode = HumanTextInputNormalizer.optionalForSubmit(couponCode, TextInputNormalization.Coupon)
     )
 }
 
@@ -346,11 +348,11 @@ private fun StoreQuoteRequestData.signature(): String = storePayloadSignature(
             append(it.quantity).append(';')
         }
         append(deliveryMethod).append('|')
-        append(department.orEmpty().trim()).append('|')
-        append(city.orEmpty().trim()).append('|')
-        append(zone.orEmpty().trim()).append('|')
-        append(deliveryAddress.orEmpty().trim()).append('|')
-        append(couponCode.orEmpty().trim().uppercase())
+        append(HumanTextInputNormalizer.forSubmit(department.orEmpty())).append('|')
+        append(HumanTextInputNormalizer.forSubmit(city.orEmpty())).append('|')
+        append(HumanTextInputNormalizer.forSubmit(zone.orEmpty())).append('|')
+        append(HumanTextInputNormalizer.forSubmit(deliveryAddress.orEmpty())).append('|')
+        append(HumanTextInputNormalizer.forSubmit(couponCode.orEmpty(), TextInputNormalization.Coupon))
     }
 )
 

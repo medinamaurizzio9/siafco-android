@@ -38,6 +38,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import bo.org.siafco.app.R
+import bo.org.siafco.app.core.text.TextInputNormalization
+import bo.org.siafco.app.core.ui.NormalizedTextField
 import bo.org.siafco.app.domain.StoreCartLine
 import bo.org.siafco.app.domain.StoreProduct
 import bo.org.siafco.app.domain.StoreQuote
@@ -232,11 +234,12 @@ fun StoreCheckoutScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Message(state.message)
-            OutlinedTextField(
+            NormalizedTextField(
                 value = state.form.couponCode,
                 onValueChange = { value -> viewModel.updateForm { copy(couponCode = value) } },
                 label = { Text(stringResource(R.string.store_coupon)) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                normalization = TextInputNormalization.Coupon
             )
             Text(stringResource(R.string.store_delivery), fontWeight = FontWeight.SemiBold)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -460,12 +463,13 @@ private fun Message(message: UiMessage?) {
 
 @Composable
 private fun Field(field: String, value: String, errors: Map<String, String>, onChange: (String) -> Unit) {
-    OutlinedTextField(
+    NormalizedTextField(
         value = value,
         onValueChange = onChange,
         label = { Text(field.replace('_', ' ')) },
         modifier = Modifier.fillMaxWidth(),
         isError = errors.containsKey(field),
-        supportingText = { errors[field]?.let { Text(it) } }
+        supportingText = { errors[field]?.let { Text(it) } },
+        normalization = TextInputNormalization.Human
     )
 }

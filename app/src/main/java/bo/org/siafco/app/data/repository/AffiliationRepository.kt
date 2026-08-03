@@ -2,6 +2,7 @@ package bo.org.siafco.app.data.repository
 
 import android.os.Build
 import bo.org.siafco.app.core.data.TokenStore
+import bo.org.siafco.app.core.text.HumanTextInputNormalizer
 import bo.org.siafco.app.data.remote.AffiliationRegistrationPayload
 import bo.org.siafco.app.data.remote.ApiEnvelope
 import bo.org.siafco.app.data.remote.CatalogsPayload
@@ -74,22 +75,22 @@ class AffiliationRepository(
 
     private fun AffiliationRegistrationForm.toMultipartParts(photoName: String): List<MultipartBody.Part> {
         val values = linkedMapOf(
-            "full_name" to fullName,
+            "full_name" to HumanTextInputNormalizer.forSubmit(fullName),
             "ci" to ci,
-            "ci_complement" to ciComplement,
+            "ci_complement" to HumanTextInputNormalizer.forSubmit(ciComplement),
             "issued_in" to issuedIn,
             "birth_date" to birthDate,
             "marital_status" to maritalStatus,
             "phone" to phone,
-            "email" to email,
+            "email" to email.trim().lowercase(),
             "password" to password,
             "password_confirmation" to passwordConfirmation,
-            "address" to address,
+            "address" to HumanTextInputNormalizer.forSubmit(address),
             "sector_id" to sectorId.toString(),
             "affiliation_plan_id" to planId.toString(),
-            "regional" to regional,
-            "institution" to institution,
-            "position" to position,
+            "regional" to HumanTextInputNormalizer.forSubmit(regional),
+            "institution" to HumanTextInputNormalizer.forSubmit(institution),
+            "position" to HumanTextInputNormalizer.forSubmit(position),
             "terms_accepted" to if (termsAccepted) "1" else "0",
             "privacy_accepted" to if (privacyAccepted) "1" else "0"
         )

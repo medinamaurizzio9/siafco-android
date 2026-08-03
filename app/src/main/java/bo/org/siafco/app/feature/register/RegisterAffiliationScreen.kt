@@ -49,6 +49,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import bo.org.siafco.app.R
+import bo.org.siafco.app.core.text.TextInputNormalization
+import bo.org.siafco.app.core.ui.NormalizedTextField
 import bo.org.siafco.app.domain.CatalogOption
 import bo.org.siafco.app.domain.CatalogPlan
 import bo.org.siafco.app.domain.CatalogSector
@@ -183,13 +185,13 @@ fun RegisterAffiliationScreen(
 @Composable
 private fun IdentityStep(state: RegisterAffiliationUiState, viewModel: RegisterAffiliationViewModel) {
     val form = state.form
-    Field(R.string.register_full_name, form.fullName, state.fieldErrors["full_name"]) {
+    Field(R.string.register_full_name, form.fullName, state.fieldErrors["full_name"], humanText = true) {
         viewModel.updateForm { current -> current.copy(fullName = it) }
     }
-    Field(R.string.register_ci, form.ci, state.fieldErrors["ci"]) {
+    Field(R.string.register_ci, form.ci, state.fieldErrors["ci"], KeyboardType.Number) {
         viewModel.updateForm { current -> current.copy(ci = it) }
     }
-    Field(R.string.register_ci_complement, form.ciComplement, null) {
+    Field(R.string.register_ci_complement, form.ciComplement, null, humanText = true) {
         viewModel.updateForm { current -> current.copy(ciComplement = it) }
     }
     MenuField(
@@ -222,7 +224,7 @@ private fun ContactStep(state: RegisterAffiliationUiState, viewModel: RegisterAf
     Field(R.string.login_email, form.email, state.fieldErrors["email"], KeyboardType.Email) {
         viewModel.updateForm { current -> current.copy(email = it) }
     }
-    Field(R.string.register_address, form.address, state.fieldErrors["address"]) {
+    Field(R.string.register_address, form.address, state.fieldErrors["address"], humanText = true) {
         viewModel.updateForm { current -> current.copy(address = it) }
     }
     PasswordField(
@@ -271,10 +273,10 @@ private fun InstitutionalStep(state: RegisterAffiliationUiState, viewModel: Regi
         optionLabel = { it },
         onSelected = { viewModel.updateForm { current -> current.copy(regional = it) } }
     )
-    Field(R.string.register_institution, form.institution, state.fieldErrors["institution"]) {
+    Field(R.string.register_institution, form.institution, state.fieldErrors["institution"], humanText = true) {
         viewModel.updateForm { current -> current.copy(institution = it) }
     }
-    Field(R.string.register_position, form.position, state.fieldErrors["position"]) {
+    Field(R.string.register_position, form.position, state.fieldErrors["position"], humanText = true) {
         viewModel.updateForm { current -> current.copy(position = it) }
     }
 }
@@ -355,9 +357,10 @@ private fun Field(
     value: String,
     error: String?,
     keyboardType: KeyboardType = KeyboardType.Text,
+    humanText: Boolean = false,
     onChange: (String) -> Unit
 ) {
-    OutlinedTextField(
+    NormalizedTextField(
         value = value,
         onValueChange = onChange,
         modifier = Modifier.fillMaxWidth(),
@@ -365,7 +368,8 @@ private fun Field(
         isError = error != null,
         supportingText = { error?.let { Text(it) } },
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-        singleLine = labelRes != R.string.register_address
+        singleLine = labelRes != R.string.register_address,
+        normalization = if (humanText) TextInputNormalization.Human else TextInputNormalization.None
     )
 }
 

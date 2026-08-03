@@ -64,7 +64,7 @@ class ProfileRepositoryTest {
         val body = request.body!!.utf8()
         assertTrue(body.contains("\"phone\":\"76543210\""))
         assertTrue(body.contains("\"email\":\"profile@siafco.test\""))
-        assertTrue(body.contains("\"address\":\"Nueva direccion\""))
+        assertTrue(body.contains("\"address\":\"NUEVA DIRECCION\""))
         assertTrue(body.contains("\"birth_date\":\"1990-05-15\""))
         assertTrue(body.contains("\"marital_status\":\"CASADO\""))
         assertFalse(body.contains("photo"))

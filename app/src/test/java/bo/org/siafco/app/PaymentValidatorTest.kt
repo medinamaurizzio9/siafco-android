@@ -51,6 +51,24 @@ class PaymentValidatorTest {
         assertNotNull(result.errors["receipt"])
     }
 
+    @Test
+    fun normalizesHumanPaymentFieldsWithoutChangingTechnicalFields() {
+        val result = PaymentValidator.validate(
+            validForm().copy(
+                transactionNumber = " trx-Abc-123 ",
+                payerName = " Ana Ñuñoa ",
+                bankName = " banco unión "
+            ),
+            today()
+        )
+
+        val payload = result.payload
+        assertNotNull(payload)
+        assertEquals("trx-Abc-123", payload!!.transactionNumber)
+        assertEquals("ANA ÑUÑOA", payload.payerName)
+        assertEquals("BANCO UNIÓN", payload.bankName)
+    }
+
     private fun validForm(
         paymentDate: String = "2026-08-01",
         receipt: PreparedReceipt? = receipt()

@@ -1,6 +1,7 @@
 package bo.org.siafco.app.data.repository
 
 import bo.org.siafco.app.core.data.TokenStore
+import bo.org.siafco.app.core.text.HumanTextInputNormalizer
 import bo.org.siafco.app.data.remote.ApiEnvelope
 import bo.org.siafco.app.data.remote.MobileProfileDto
 import bo.org.siafco.app.data.remote.SiafcoApi
@@ -48,8 +49,8 @@ class ProfileRepository(
         api.updateProfile(
             UpdateProfileRequest(
                 phone = changes.phone.ifBlank { null },
-                email = changes.email.ifBlank { null },
-                address = changes.address.ifBlank { null },
+                email = changes.email.trim().lowercase().ifBlank { null },
+                address = HumanTextInputNormalizer.optionalForSubmit(changes.address),
                 birthDate = changes.birthDate.ifBlank { null },
                 maritalStatus = changes.maritalStatus.ifBlank { null }
             )

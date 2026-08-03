@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -39,9 +40,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import bo.org.siafco.app.R
+import bo.org.siafco.app.core.text.TextInputNormalization
+import bo.org.siafco.app.core.ui.NormalizedTextField
 import bo.org.siafco.app.data.receipt.ReceiptPreparer
 import bo.org.siafco.app.domain.AffiliationRequestSummary
 import bo.org.siafco.app.domain.canStartPaymentSubmission
@@ -223,7 +227,8 @@ private fun PaymentForm(
             label = { Text(stringResource(R.string.payment_transaction_number)) },
             modifier = Modifier.fillMaxWidth(),
             isError = state.fieldErrors.containsKey("transaction_number"),
-            supportingText = { FieldError(state, "transaction_number") }
+            supportingText = { FieldError(state, "transaction_number") },
+            singleLine = true
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
             OutlinedTextField(
@@ -232,7 +237,9 @@ private fun PaymentForm(
                 label = { Text(stringResource(R.string.payment_date)) },
                 modifier = Modifier.weight(1f),
                 isError = state.fieldErrors.containsKey("payment_date"),
-                supportingText = { FieldError(state, "payment_date") }
+                supportingText = { FieldError(state, "payment_date") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true
             )
             OutlinedButton(
                 onClick = {
@@ -258,23 +265,27 @@ private fun PaymentForm(
             label = { Text(stringResource(R.string.payment_amount)) },
             modifier = Modifier.fillMaxWidth(),
             isError = state.fieldErrors.containsKey("paid_amount"),
-            supportingText = { FieldError(state, "paid_amount") }
+            supportingText = { FieldError(state, "paid_amount") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            singleLine = true
         )
-        OutlinedTextField(
+        NormalizedTextField(
             value = form.payerName,
             onValueChange = onPayerName,
             label = { Text(stringResource(R.string.payment_payer)) },
             modifier = Modifier.fillMaxWidth(),
             isError = state.fieldErrors.containsKey("payer_name"),
-            supportingText = { FieldError(state, "payer_name") }
+            supportingText = { FieldError(state, "payer_name") },
+            normalization = TextInputNormalization.Human
         )
-        OutlinedTextField(
+        NormalizedTextField(
             value = form.bankName,
             onValueChange = onBankName,
             label = { Text(stringResource(R.string.payment_bank_name)) },
             modifier = Modifier.fillMaxWidth(),
             isError = state.fieldErrors.containsKey("bank_name"),
-            supportingText = { FieldError(state, "bank_name") }
+            supportingText = { FieldError(state, "bank_name") },
+            normalization = TextInputNormalization.Human
         )
         OutlinedButton(onClick = onPickReceipt, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.payment_pick_receipt))

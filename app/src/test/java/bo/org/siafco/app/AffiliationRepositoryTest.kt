@@ -70,6 +70,13 @@ class AffiliationRepositoryTest {
         assertEquals("/api/mobile/v1/affiliation-requests", request.url.encodedPath)
         assertTrue(request.headers["Content-Type"].orEmpty().startsWith("multipart/form-data"))
         assertNotNull(request.body)
+        val body = request.body!!.utf8()
+        assertTrue(body.contains("ANA PEREZ"))
+        assertTrue(body.contains("CALLE"))
+        assertTrue(body.contains("INSTITUCION"))
+        assertTrue(body.contains("CARGO"))
+        assertTrue(body.contains("ana@siafco.test"))
+        assertTrue(body.contains("Secret123"))
     }
 
     @Test

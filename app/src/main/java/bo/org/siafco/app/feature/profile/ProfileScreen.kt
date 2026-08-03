@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -48,11 +49,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import bo.org.siafco.app.R
 import bo.org.siafco.app.core.network.UrlResolver
+import bo.org.siafco.app.core.text.TextInputNormalization
+import bo.org.siafco.app.core.ui.NormalizedTextField
 import bo.org.siafco.app.domain.MobileProfile
 import bo.org.siafco.app.feature.photo.PhotoInputFlow
 import coil3.compose.AsyncImage
@@ -219,9 +223,9 @@ private fun EditableProfileCard(state: ProfileUiState, onPickDate: () -> Unit, v
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(stringResource(R.string.profile_editable), fontWeight = FontWeight.SemiBold)
-            Field("phone", stringResource(R.string.register_phone), state.form.phone, state.fieldErrors) { viewModel.updateForm { copy(phone = it) } }
-            Field("email", stringResource(R.string.login_email), state.form.email, state.fieldErrors) { viewModel.updateForm { copy(email = it) } }
-            Field("address", stringResource(R.string.register_address), state.form.address, state.fieldErrors) { viewModel.updateForm { copy(address = it) } }
+            Field("phone", stringResource(R.string.register_phone), state.form.phone, state.fieldErrors, KeyboardType.Phone) { viewModel.updateForm { copy(phone = it) } }
+            Field("email", stringResource(R.string.login_email), state.form.email, state.fieldErrors, KeyboardType.Email) { viewModel.updateForm { copy(email = it) } }
+            Field("address", stringResource(R.string.register_address), state.form.address, state.fieldErrors, humanText = true) { viewModel.updateForm { copy(address = it) } }
             BirthDateField(state = state, onPickDate = onPickDate)
             MaritalStatusField(state = state, viewModel = viewModel)
         }
@@ -337,14 +341,24 @@ private fun PasswordSection(state: ProfileUiState, viewModel: ProfileViewModel, 
 }
 
 @Composable
-private fun Field(field: String, label: String, value: String, errors: Map<String, String>, onChange: (String) -> Unit) {
-    OutlinedTextField(
+private fun Field(
+    field: String,
+    label: String,
+    value: String,
+    errors: Map<String, String>,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    humanText: Boolean = false,
+    onChange: (String) -> Unit
+) {
+    NormalizedTextField(
         value = value,
         onValueChange = onChange,
         label = { Text(label) },
         modifier = Modifier.fillMaxWidth(),
         isError = errors.containsKey(field),
-        supportingText = { errors[field]?.let { Text(it) } }
+        supportingText = { errors[field]?.let { Text(it) } },
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        normalization = if (humanText) TextInputNormalization.Human else TextInputNormalization.None
     )
 }
 
@@ -357,7 +371,8 @@ private fun PasswordField(field: String, label: String, value: String, state: Pr
         modifier = Modifier.fillMaxWidth(),
         visualTransformation = if (state.passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
         isError = state.passwordErrors.containsKey(field),
-        supportingText = { state.passwordErrors[field]?.let { Text(it) } }
+        supportingText = { state.passwordErrors[field]?.let { Text(it) } },
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
     )
 }
 
