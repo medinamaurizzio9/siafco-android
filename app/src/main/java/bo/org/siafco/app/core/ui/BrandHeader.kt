@@ -9,6 +9,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -21,7 +22,9 @@ import bo.org.siafco.app.R
 @Composable
 fun BrandHeader(
     modifier: Modifier = Modifier,
-    logoSize: Dp = 96.dp
+    logoSize: Dp = 96.dp,
+    titleColor: Color = MaterialTheme.colorScheme.primary,
+    subtitleColor: Color = MaterialTheme.colorScheme.secondary
 ) {
     Column(
         modifier = modifier,
@@ -38,14 +41,14 @@ fun BrandHeader(
             text = stringResource(R.string.splash_title),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Black,
-            color = MaterialTheme.colorScheme.primary,
+            color = titleColor,
             textAlign = TextAlign.Center
         )
         Text(
             text = stringResource(R.string.splash_subtitle),
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.secondary,
+            color = subtitleColor,
             textAlign = TextAlign.Center
         )
     }

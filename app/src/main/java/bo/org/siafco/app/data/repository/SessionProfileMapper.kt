@@ -20,6 +20,8 @@ fun MobileProfileDto.toSessionProfile(source: String): SessionProfile {
             AccessLevel.Pending
         },
         hasAffiliateProfile = affiliate != null,
-        allowedProfileFields = allowedFields
+        allowedProfileFields = allowedFields,
+        photoUrl = affiliate?.photoUrl,
+        registrationNumber = affiliate?.registrationNumber
     )
 }

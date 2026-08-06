@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -32,12 +33,15 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,7 +53,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import bo.org.siafco.app.R
 import bo.org.siafco.app.core.text.TextInputNormalization
+import bo.org.siafco.app.core.ui.CooperativeBottomBar
+import bo.org.siafco.app.core.ui.CooperativeDestination
+import bo.org.siafco.app.core.ui.CooperativeSpacing
+import bo.org.siafco.app.core.ui.CooperativeTextSecondary
+import bo.org.siafco.app.core.ui.CooperativeTopBar
+import bo.org.siafco.app.core.ui.EmptyState
+import bo.org.siafco.app.core.ui.InstitutionalCard
+import bo.org.siafco.app.core.ui.LoadingSkeleton
+import bo.org.siafco.app.core.ui.MoneyText
 import bo.org.siafco.app.core.ui.NormalizedTextField
+import bo.org.siafco.app.core.ui.PrimaryButton
+import bo.org.siafco.app.core.ui.SectionHeader
+import bo.org.siafco.app.core.ui.SecondaryButton
+import bo.org.siafco.app.core.ui.StatusBadge
 import bo.org.siafco.app.data.receipt.ReceiptPreparer
 import bo.org.siafco.app.domain.StoreCartLine
 import bo.org.siafco.app.domain.StoreOrder
@@ -72,21 +89,31 @@ fun StoreCatalogScreen(
     onBack: () -> Unit,
     onLoggedOut: () -> Unit,
     onOpenProduct: (String) -> Unit,
-    onOpenCart: () -> Unit
+    onOpenCart: () -> Unit,
+    onBottomDestination: (CooperativeDestination) -> Unit
 ) {
     val state by viewModel.state.collectAsState()
     LaunchedEffect(Unit) { viewModel.load() }
     LaunchedEffect(state.loggedOut) { if (state.loggedOut) onLoggedOut() }
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.store_title)) },
-                navigationIcon = { IconButton(onClick = onBack) { Text("<") } },
-                actions = { IconButton(onClick = onOpenCart) { Text("Carrito") } }
+            CooperativeTopBar(
+                title = stringResource(R.string.store_title),
+                onBack = onBack,
+                actions = { SecondaryButton(text = "Carrito", onClick = onOpenCart) }
+            )
+        },
+        bottomBar = {
+            CooperativeBottomBar(
+                selected = CooperativeDestination.Store,
+                canOpenStore = true,
+                canOpenCredential = true,
+                onSelect = onBottomDestination
             )
         }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            SectionHeader(title = stringResource(R.string.store_title), subtitle = "Beneficios y productos para afiliados")
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(
                     value = state.filters.search,
@@ -95,7 +122,7 @@ fun StoreCatalogScreen(
                     modifier = Modifier.weight(1f),
                     singleLine = true
                 )
-                Button(onClick = viewModel::applySearch, enabled = !state.loading) { Text(stringResource(R.string.store_update)) }
+                PrimaryButton(text = stringResource(R.string.store_update), onClick = viewModel::applySearch, enabled = !state.loading)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(selected = state.filters.categorySlug == null, onClick = { viewModel.selectCategory(null) }, label = { Text(stringResource(R.string.store_all)) })
@@ -104,7 +131,10 @@ fun StoreCatalogScreen(
                 }
             }
             Message(state.message)
-            if (state.loading && state.catalog == null) CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))
+            if (state.loading && state.catalog == null) LoadingSkeleton("Cargando productos")
+            if (!state.loading && state.catalog?.products.orEmpty().isEmpty()) {
+                EmptyState(title = "Sin productos disponibles", message = "Cuando haya productos activos los verás en esta sección.")
+            }
             LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(state.catalog?.products.orEmpty(), key = { it.publicCode }) { product ->
                     ProductCard(product = product, onClick = { onOpenProduct(product.publicCode) })
@@ -128,16 +158,16 @@ fun StoreProductScreen(
     LaunchedEffect(state.loggedOut) { if (state.loggedOut) onLoggedOut() }
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text(stringResource(R.string.store_product_title)) }, navigationIcon = { IconButton(onClick = onBack) { Text("<") } })
+            CooperativeTopBar(title = stringResource(R.string.store_product_title), onBack = onBack)
         }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (state.loading) CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))
+            if (state.loading) LoadingSkeleton("Cargando producto", Modifier.align(Alignment.CenterHorizontally))
             Message(state.message)
             state.product?.let { product ->
                 AsyncImage(model = product.primaryImageUrl, contentDescription = product.name, modifier = Modifier.fillMaxWidth().height(220.dp), contentScale = ContentScale.Crop)
                 Text(product.name, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                Text("${product.currency} ${product.effectivePrice}", style = MaterialTheme.typography.titleLarge)
+                MoneyText(product.currency, product.effectivePrice)
                 product.shortDescription?.let { Text(it) }
                 Text(product.availabilityStatus, style = MaterialTheme.typography.bodySmall)
                 if (product.variants.isNotEmpty()) {
@@ -158,14 +188,10 @@ fun StoreProductScreen(
                 state.disabledReason?.let { reason ->
                     if (!state.canAddToCart || reason == MaxQuantityReached) Text(text = stringResource(reason.messageRes), color = MaterialTheme.colorScheme.error)
                 }
-                Button(onClick = viewModel::addToCart, enabled = state.canAddToCart, modifier = Modifier.fillMaxWidth()) {
-                    Text(if (state.adding) stringResource(R.string.store_adding_to_cart) else stringResource(R.string.store_add_to_cart))
-                }
+                PrimaryButton(text = if (state.adding) stringResource(R.string.store_adding_to_cart) else stringResource(R.string.store_add_to_cart), onClick = viewModel::addToCart, enabled = state.canAddToCart, modifier = Modifier.fillMaxWidth())
                 if (state.added) {
                     Text(stringResource(R.string.store_added_to_cart))
-                    OutlinedButton(onClick = onOpenCart, modifier = Modifier.fillMaxWidth()) {
-                        Text(stringResource(R.string.store_go_to_cart_with_count, state.cartCount))
-                    }
+                    SecondaryButton(text = stringResource(R.string.store_go_to_cart_with_count, state.cartCount), onClick = onOpenCart, modifier = Modifier.fillMaxWidth())
                 }
             }
         }
@@ -176,8 +202,23 @@ fun StoreProductScreen(
 @Composable
 fun StoreCartScreen(viewModel: StoreCartViewModel, onBack: () -> Unit, onLoggedOut: () -> Unit, onCheckout: () -> Unit) {
     val state by viewModel.state.collectAsState()
+    var confirmClear by remember { mutableStateOf(false) }
     LaunchedEffect(state.loggedOut) { if (state.loggedOut) onLoggedOut() }
-    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.store_cart_title)) }, navigationIcon = { IconButton(onClick = onBack) { Text("<") } }) }) { padding ->
+    if (confirmClear) {
+        AlertDialog(
+            onDismissRequest = { confirmClear = false },
+            title = { Text("Vaciar carrito") },
+            text = { Text("Se eliminarán los productos guardados en este dispositivo.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmClear = false
+                    viewModel.clear()
+                }) { Text(stringResource(R.string.store_clear_cart)) }
+            },
+            dismissButton = { TextButton(onClick = { confirmClear = false }) { Text(stringResource(R.string.register_back)) } }
+        )
+    }
+    Scaffold(topBar = { CooperativeTopBar(title = stringResource(R.string.store_cart_title), onBack = onBack) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Message(state.message)
             if (state.lines.isEmpty()) {
@@ -196,10 +237,8 @@ fun StoreCartScreen(viewModel: StoreCartViewModel, onBack: () -> Unit, onLoggedO
                     )
                 }
             }
-            Button(onClick = onCheckout, modifier = Modifier.fillMaxWidth(), enabled = !state.loadingQuote && state.quote != null) {
-                Text(stringResource(R.string.store_checkout))
-            }
-            OutlinedButton(onClick = viewModel::clear, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.store_clear_cart)) }
+            PrimaryButton(text = stringResource(R.string.store_checkout), onClick = onCheckout, modifier = Modifier.fillMaxWidth(), enabled = !state.loadingQuote && state.quote != null)
+            SecondaryButton(text = stringResource(R.string.store_clear_cart), onClick = { confirmClear = true }, modifier = Modifier.fillMaxWidth())
         }
     }
 }
@@ -210,16 +249,18 @@ fun StoreCheckoutScreen(viewModel: StoreCheckoutViewModel, onBack: () -> Unit, o
     val state by viewModel.state.collectAsState()
     LaunchedEffect(state.loggedOut) { if (state.loggedOut) onLoggedOut() }
     LaunchedEffect(state.createdOrder?.code) { state.createdOrder?.code?.let(onCreated) }
-    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.store_checkout_title)) }, navigationIcon = { IconButton(onClick = onBack) { Text("<") } }) }) { padding ->
+    Scaffold(topBar = { CooperativeTopBar(title = stringResource(R.string.store_checkout_title), onBack = onBack) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(stringResource(R.string.store_checkout_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            SectionHeader(stringResource(R.string.store_checkout_title), "Flujo seguro de compra")
             Message(state.message)
             if (state.lines.isEmpty()) {
                 Text(stringResource(R.string.store_cart_empty))
                 return@Column
             }
             if (state.loadingQuote) CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))
+            SectionHeader("Paso 1", "Productos")
             state.quote?.let { QuoteSummary(it, compact = true) }
+            SectionHeader("Paso 2", "Entrega")
             NormalizedTextField(
                 value = state.form.couponCode,
                 onValueChange = { value -> viewModel.updateForm { copy(couponCode = value) } },
@@ -242,10 +283,10 @@ fun StoreCheckoutScreen(viewModel: StoreCheckoutViewModel, onBack: () -> Unit, o
                 Field("zone", state.form.zone, state.fieldErrors) { viewModel.updateForm { copy(zone = it) } }
                 Field("delivery_address", state.form.deliveryAddress, state.fieldErrors) { viewModel.updateForm { copy(deliveryAddress = it) } }
             }
+            SectionHeader("Paso 3", "Cupón y totales")
             if (state.quote == null && !state.loadingQuote) Text(stringResource(R.string.store_quote_required), color = MaterialTheme.colorScheme.error)
-            Button(onClick = viewModel::submit, enabled = state.canCreateOrder, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.store_create_order))
-            }
+            SectionHeader("Paso 4", "Confirmación")
+            PrimaryButton(text = stringResource(R.string.store_create_order), onClick = viewModel::submit, enabled = state.canCreateOrder, modifier = Modifier.fillMaxWidth())
             if (state.submitting) CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))
         }
     }
@@ -253,25 +294,42 @@ fun StoreCheckoutScreen(viewModel: StoreCheckoutViewModel, onBack: () -> Unit, o
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StoreOrdersScreen(viewModel: StoreOrdersViewModel, onBack: () -> Unit, onLoggedOut: () -> Unit, onOpenOrder: (String) -> Unit) {
+fun StoreOrdersScreen(
+    viewModel: StoreOrdersViewModel,
+    onBack: () -> Unit,
+    onLoggedOut: () -> Unit,
+    onOpenOrder: (String) -> Unit,
+    onBottomDestination: (CooperativeDestination) -> Unit
+) {
     val state by viewModel.state.collectAsState()
     LaunchedEffect(Unit) { viewModel.load() }
     LaunchedEffect(state.loggedOut) { if (state.loggedOut) onLoggedOut() }
-    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.store_orders_title)) }, navigationIcon = { IconButton(onClick = onBack) { Text("<") } }, actions = { IconButton(onClick = { viewModel.load(force = true) }) { Text(stringResource(R.string.store_update)) } }) }) { padding ->
+    Scaffold(
+        topBar = { CooperativeTopBar(title = stringResource(R.string.store_orders_title), onBack = onBack, actions = { SecondaryButton(text = stringResource(R.string.store_update), onClick = { viewModel.load(force = true) }) }) },
+        bottomBar = {
+            CooperativeBottomBar(
+                selected = CooperativeDestination.Orders,
+                canOpenStore = true,
+                canOpenCredential = true,
+                onSelect = onBottomDestination
+            )
+        }
+    ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Message(state.message)
-            if (state.loading && state.orders.isEmpty()) CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))
+            if (state.loading && state.orders.isEmpty()) LoadingSkeleton("Cargando pedidos")
+            if (!state.loading && state.orders.isEmpty()) EmptyState("Sin pedidos", "Tus pedidos de Mini tienda aparecerán aquí.")
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(state.orders, key = { it.code }) { order ->
                     Card(onClick = { onOpenOrder(order.code) }, modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(stringResource(R.string.store_order_number, order.code), fontWeight = FontWeight.SemiBold)
                             order.date?.let { Text(stringResource(R.string.store_order_date, it), style = MaterialTheme.typography.bodySmall) }
-                            Text(order.statusLabel)
+                            StatusBadge(order.statusLabel)
                             Text(stringResource(R.string.store_delivery_method, deliveryLabel(order.deliveryMethod)), style = MaterialTheme.typography.bodySmall)
-                            Text("${order.currency} ${order.total}")
+                            MoneyText(order.currency, order.total)
                             order.itemSummary?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-                            OutlinedButton(onClick = { onOpenOrder(order.code) }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.store_order_view)) }
+                            SecondaryButton(text = stringResource(R.string.store_order_view), onClick = { onOpenOrder(order.code) }, modifier = Modifier.fillMaxWidth())
                         }
                     }
                 }
@@ -295,7 +353,7 @@ fun StoreOrderDetailScreen(viewModel: StoreOrderDetailViewModel, orderCode: Stri
         }
         viewModel.whatsappConsumed()
     }
-    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.store_order_detail_title)) }, navigationIcon = { IconButton(onClick = onBack) { Text("<") } }, actions = { IconButton(onClick = { viewModel.load(orderCode, force = true) }) { Text(stringResource(R.string.store_update)) } }) }) { padding ->
+    Scaffold(topBar = { CooperativeTopBar(title = stringResource(R.string.store_order_detail_title), onBack = onBack, actions = { SecondaryButton(text = stringResource(R.string.store_update), onClick = { viewModel.load(orderCode, force = true) }) }) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Message(state.message)
             if (state.loading && state.order == null) CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))
@@ -304,7 +362,7 @@ fun StoreOrderDetailScreen(viewModel: StoreOrderDetailViewModel, orderCode: Stri
                 Text(order.statusLabel)
                 order.createdAt?.let { Text(stringResource(R.string.store_order_date, it), style = MaterialTheme.typography.bodySmall) }
                 Text(stringResource(R.string.store_delivery_method, deliveryLabel(order.deliveryMethod)))
-                Text("${order.currency} ${order.total}", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                MoneyText(order.currency, order.total)
                 order.items.forEach { item -> OrderItemCard(item, order.currency) }
                 OrderTotals(order)
                 order.payment?.message?.let {
@@ -312,10 +370,10 @@ fun StoreOrderDetailScreen(viewModel: StoreOrderDetailViewModel, orderCode: Stri
                     Text(it)
                 }
                 if (order.capabilities.canUploadReceipt) {
-                    Button(onClick = { onUploadReceipt(order.code) }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.store_upload_receipt)) }
+                    PrimaryButton(text = stringResource(R.string.store_upload_receipt), onClick = { onUploadReceipt(order.code) }, modifier = Modifier.fillMaxWidth())
                 }
                 if (order.capabilities.canOpenWhatsapp) {
-                    OutlinedButton(onClick = viewModel::requestWhatsapp, enabled = !state.openingWhatsapp, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.store_open_whatsapp)) }
+                    SecondaryButton(text = stringResource(R.string.store_open_whatsapp), onClick = viewModel::requestWhatsapp, enabled = !state.openingWhatsapp, modifier = Modifier.fillMaxWidth())
                 }
             }
         }
@@ -333,14 +391,14 @@ fun StoreReceiptScreen(viewModel: StoreReceiptViewModel, orderCode: String, onBa
     }
     LaunchedEffect(state.loggedOut) { if (state.loggedOut) onLoggedOut() }
     LaunchedEffect(state.submittedOrder) { if (state.submittedOrder != null) onSubmitted() }
-    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.store_receipt_title)) }, navigationIcon = { IconButton(onClick = onBack) { Text("<") } }) }) { padding ->
+    Scaffold(topBar = { CooperativeTopBar(title = stringResource(R.string.store_receipt_title), onBack = onBack) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.store_receipt_order, orderCode), fontWeight = FontWeight.SemiBold)
             Message(state.message)
-            OutlinedButton(onClick = { launcher.launch(arrayOf("image/jpeg", "image/png", "image/webp", "application/pdf")) }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.payment_pick_receipt)) }
+            SecondaryButton(text = stringResource(R.string.payment_pick_receipt), onClick = { launcher.launch(arrayOf("image/jpeg", "image/png", "image/webp", "application/pdf")) }, modifier = Modifier.fillMaxWidth())
             state.receipt?.let { Text("${it.displayName} - ${it.sizeBytes / 1024} KB") }
             state.fieldError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            Button(onClick = { viewModel.submit(orderCode) }, enabled = !state.submitting && state.receipt != null, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.store_upload_receipt)) }
+            PrimaryButton(text = stringResource(R.string.store_upload_receipt), onClick = { viewModel.submit(orderCode) }, enabled = !state.submitting && state.receipt != null, modifier = Modifier.fillMaxWidth())
             if (state.submitting) CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally))
         }
     }

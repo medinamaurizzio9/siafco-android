@@ -43,7 +43,7 @@ class SiafcoViewModelFactory(
         return when {
             modelClass.isAssignableFrom(SplashViewModel::class.java) -> SplashViewModel(authRepository)
             modelClass.isAssignableFrom(LoginViewModel::class.java) -> LoginViewModel(authRepository)
-            modelClass.isAssignableFrom(HomeViewModel::class.java) -> HomeViewModel(authRepository)
+            modelClass.isAssignableFrom(HomeViewModel::class.java) -> HomeViewModel(authRepository, storeRepository)
             modelClass.isAssignableFrom(RegisterAffiliationViewModel::class.java) -> {
                 RegisterAffiliationViewModel(affiliationRepository)
             }

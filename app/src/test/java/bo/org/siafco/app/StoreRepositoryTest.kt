@@ -2,6 +2,7 @@ package bo.org.siafco.app
 
 import bo.org.siafco.app.data.remote.SiafcoApi
 import bo.org.siafco.app.data.repository.StoreCatalogFilters
+import bo.org.siafco.app.data.repository.StoreOrderFilters
 import bo.org.siafco.app.data.repository.StoreRepository
 import bo.org.siafco.app.data.repository.StoreResult
 import bo.org.siafco.app.domain.StoreCartLine
@@ -13,6 +14,7 @@ import mockwebserver3.MockWebServer
 import okhttp3.MediaType.Companion.toMediaType
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -112,11 +114,29 @@ class StoreRepositoryTest {
         server.enqueue(jsonResponse(WHATSAPP_JSON))
 
         assertTrue(repository.orders() is StoreResult.Success)
+        val ordersRequest = server.takeRequest()
+        assertEquals("/api/mobile/v1/store/orders", ordersRequest.url.encodedPath)
+        assertNull(ordersRequest.url.queryParameter("attention_only"))
+
         assertTrue(repository.order("PED-1") is StoreResult.Success)
         val whatsapp = repository.whatsapp("PED-1")
 
         assertTrue(whatsapp is StoreResult.Success)
         assertEquals("https://wa.me/59170000000?text=Pedido", (whatsapp as StoreResult.Success).value.url)
+    }
+
+    @Test
+    fun attentionOnlyOrdersSendDedicatedQueryWithoutStatusFilter() = runTest {
+        server.enqueue(jsonResponse(ORDERS_JSON))
+
+        val result = repository.orders(StoreOrderFilters(attentionOnly = true, perPage = 3))
+
+        assertTrue(result is StoreResult.Success)
+        val request = server.takeRequest()
+        assertEquals("/api/mobile/v1/store/orders", request.url.encodedPath)
+        assertEquals("true", request.url.queryParameter("attention_only"))
+        assertEquals("3", request.url.queryParameter("per_page"))
+        assertNull(request.url.queryParameter("status"))
     }
 
     @Test

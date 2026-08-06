@@ -7,22 +7,46 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
+val CooperativeNavy = Color(0xFF0A2342)
+val CooperativeNavySecondary = Color(0xFF123A63)
+val CooperativeGold = Color(0xFFD9AE2B)
+val CooperativeGoldSoft = Color(0xFFF3D675)
+val CooperativeBackground = Color(0xFFF5F7FA)
+val CooperativeSurface = Color(0xFFFFFFFF)
+val CooperativeTextPrimary = Color(0xFF101828)
+val CooperativeTextSecondary = Color(0xFF667085)
+val CooperativeSuccess = Color(0xFF15803D)
+val CooperativeWarning = Color(0xFFB7791F)
+val CooperativeError = Color(0xFFB42318)
+
 private val LightColors = lightColorScheme(
-    primary = Color(0xFF071B3A),
+    primary = CooperativeNavy,
     onPrimary = Color.White,
-    secondary = Color(0xFFD9A323),
-    tertiary = Color(0xFF0B5A9E),
-    background = Color(0xFFF7F9FC),
-    surface = Color(0xFFFFFFFF)
+    secondary = CooperativeGold,
+    onSecondary = CooperativeNavy,
+    tertiary = CooperativeNavySecondary,
+    background = CooperativeBackground,
+    onBackground = CooperativeTextPrimary,
+    surface = CooperativeSurface,
+    onSurface = CooperativeTextPrimary,
+    surfaceVariant = Color(0xFFE8EDF3),
+    onSurfaceVariant = CooperativeTextSecondary,
+    error = CooperativeError
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFF8FB7FF),
-    onPrimary = Color(0xFF071B3A),
-    secondary = Color(0xFFE7C35F),
+    primary = Color(0xFF9EC5FF),
+    onPrimary = CooperativeNavy,
+    secondary = CooperativeGoldSoft,
+    onSecondary = CooperativeNavy,
     tertiary = Color(0xFF8FC8FF),
     background = Color(0xFF07111F),
-    surface = Color(0xFF101B2C)
+    onBackground = Color(0xFFE8EDF3),
+    surface = Color(0xFF101B2C),
+    onSurface = Color(0xFFE8EDF3),
+    surfaceVariant = Color(0xFF1A2A42),
+    onSurfaceVariant = Color(0xFFB9C2D0),
+    error = Color(0xFFFFB4AB)
 )
 
 @Composable

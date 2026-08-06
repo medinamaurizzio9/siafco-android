@@ -20,7 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -30,8 +29,8 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -56,7 +55,18 @@ import androidx.compose.ui.unit.dp
 import bo.org.siafco.app.R
 import bo.org.siafco.app.core.network.UrlResolver
 import bo.org.siafco.app.core.text.TextInputNormalization
+import bo.org.siafco.app.core.ui.CooperativeBottomBar
+import bo.org.siafco.app.core.ui.CooperativeDestination
+import bo.org.siafco.app.core.ui.CooperativeSpacing
+import bo.org.siafco.app.core.ui.CooperativeTextSecondary
+import bo.org.siafco.app.core.ui.CooperativeTopBar
+import bo.org.siafco.app.core.ui.InstitutionalCard
 import bo.org.siafco.app.core.ui.NormalizedTextField
+import bo.org.siafco.app.core.ui.PrimaryButton
+import bo.org.siafco.app.core.ui.SecondaryButton
+import bo.org.siafco.app.core.ui.SectionHeader
+import bo.org.siafco.app.core.ui.StatusBadge
+import bo.org.siafco.app.core.ui.StatusTone
 import bo.org.siafco.app.domain.MobileProfile
 import bo.org.siafco.app.feature.photo.PhotoInputFlow
 import coil3.compose.AsyncImage
@@ -67,6 +77,7 @@ import java.time.LocalDate
 fun ProfileScreen(
     viewModel: ProfileViewModel,
     onBack: () -> Unit,
+    onBottomDestination: (CooperativeDestination) -> Unit,
     onLoggedOut: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
@@ -106,41 +117,51 @@ fun ProfileScreen(
         }
     )
 
-    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            OutlinedButton(onClick = {
-                leaveProfile()
-            }) { Text(stringResource(R.string.register_back)) }
+    val active = state.profile?.status == "activo"
+    Scaffold(
+        topBar = { CooperativeTopBar(title = stringResource(R.string.profile_title), onBack = ::leaveProfile) },
+        bottomBar = {
+            CooperativeBottomBar(
+                selected = CooperativeDestination.Profile,
+                canOpenStore = active,
+                canOpenCredential = active,
+                onSelect = onBottomDestination
+            )
+        }
+    ) { padding ->
+        Surface(modifier = Modifier.fillMaxSize().padding(padding), color = MaterialTheme.colorScheme.background) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                if (state.loading && state.profile == null) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                }
 
-            if (state.loading && state.profile == null) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                state.profile?.let { profile ->
+                    ProfileHeader(profile = profile, state = state)
+                    ProtectedDataCard(profile)
+                    EditableProfileCard(state = state, onPickDate = { showBirthDatePicker(context, state, viewModel) }, viewModel = viewModel)
+                    PrimaryButton(
+                        text = if (state.savingProfile) "Guardando..." else stringResource(R.string.profile_save),
+                        onClick = { if (state.form.email != profile.email) confirmEmail = true else viewModel.saveProfile() },
+                        enabled = !state.savingProfile,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    PhotoSection(
+                        state = state,
+                        onPick = { photoFlowVisible = true },
+                        onUpload = viewModel::savePhoto
+                    )
+                    PasswordSection(state = state, viewModel = viewModel, onSubmit = { confirmPassword = true })
+                }
+
+                state.message?.let { Text(stringResource(it.resId), color = MaterialTheme.colorScheme.error) }
+                state.messageText?.let { Text(it, color = MaterialTheme.colorScheme.secondary) }
             }
-
-            state.profile?.let { profile ->
-                ProfileHeader(profile = profile, state = state)
-                ProtectedDataCard(profile)
-                EditableProfileCard(state = state, onPickDate = { showBirthDatePicker(context, state, viewModel) }, viewModel = viewModel)
-                Button(
-                    onClick = { if (state.form.email != profile.email) confirmEmail = true else viewModel.saveProfile() },
-                    enabled = !state.savingProfile,
-                    modifier = Modifier.fillMaxWidth()
-                ) { Text(if (state.savingProfile) "Guardando..." else stringResource(R.string.profile_save)) }
-                PhotoSection(
-                    state = state,
-                    onPick = { photoFlowVisible = true },
-                    onUpload = viewModel::savePhoto
-                )
-                PasswordSection(state = state, viewModel = viewModel, onSubmit = { confirmPassword = true })
-            }
-
-            state.message?.let { Text(stringResource(it.resId), color = MaterialTheme.colorScheme.error) }
-            state.messageText?.let { Text(it, color = MaterialTheme.colorScheme.secondary) }
         }
     }
     PhotoInputFlow(
@@ -164,12 +185,15 @@ private fun showBirthDatePicker(context: android.content.Context, state: Profile
 
 @Composable
 private fun ProfileHeader(profile: MobileProfile, state: ProfileUiState) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-        Text(stringResource(R.string.profile_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        ProfilePhoto(profile = profile, state = state, modifier = Modifier.size(112.dp))
-        Text(profile.fullName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        profile.registrationNumber?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
-        Text(profile.statusLabel ?: profile.status.orEmpty(), color = MaterialTheme.colorScheme.primary)
+    InstitutionalCard(modifier = Modifier.fillMaxWidth(), tonal = true) {
+        Row(horizontalArrangement = Arrangement.spacedBy(CooperativeSpacing.md), verticalAlignment = Alignment.CenterVertically) {
+            ProfilePhoto(profile = profile, state = state, modifier = Modifier.size(88.dp))
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(profile.fullName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
+                profile.registrationNumber?.let { Text("Registro $it", style = MaterialTheme.typography.bodyMedium, color = CooperativeTextSecondary) }
+                StatusBadge(profile.statusLabel ?: profile.status.orEmpty(), tone = if (profile.status == "activo") StatusTone.Success else StatusTone.Warning)
+            }
+        }
     }
 }
 
@@ -203,32 +227,28 @@ private fun ProfilePhoto(profile: MobileProfile, state: ProfileUiState, modifier
 
 @Composable
 private fun ProtectedDataCard(profile: MobileProfile) {
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(stringResource(R.string.profile_readonly), fontWeight = FontWeight.SemiBold)
+    InstitutionalCard(modifier = Modifier.fillMaxWidth()) {
+            SectionHeader(stringResource(R.string.profile_readonly), "Información administrada por la cooperativa")
             InfoLine("Nombre", profile.fullName)
             InfoLine("CI", profile.ci)
-            InfoLine("Codigo", profile.registrationNumber)
+            InfoLine("Código", profile.registrationNumber)
             InfoLine("Sector", profile.sectorName)
             InfoLine("Plan", profile.planName)
             InfoLine("Regional", profile.regional)
-            InfoLine("Institucion", profile.institution)
+            InfoLine("Institución", profile.institution)
             InfoLine("Estado", profile.statusLabel ?: profile.status)
-        }
     }
 }
 
 @Composable
 private fun EditableProfileCard(state: ProfileUiState, onPickDate: () -> Unit, viewModel: ProfileViewModel) {
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(stringResource(R.string.profile_editable), fontWeight = FontWeight.SemiBold)
+    InstitutionalCard(modifier = Modifier.fillMaxWidth()) {
+            SectionHeader(stringResource(R.string.profile_editable), "Actualiza solo los campos permitidos")
             Field("phone", stringResource(R.string.register_phone), state.form.phone, state.fieldErrors, KeyboardType.Phone) { viewModel.updateForm { copy(phone = it) } }
             Field("email", stringResource(R.string.login_email), state.form.email, state.fieldErrors, KeyboardType.Email) { viewModel.updateForm { copy(email = it) } }
             Field("address", stringResource(R.string.register_address), state.form.address, state.fieldErrors, humanText = true) { viewModel.updateForm { copy(address = it) } }
             BirthDateField(state = state, onPickDate = onPickDate)
             MaritalStatusField(state = state, viewModel = viewModel)
-        }
     }
 }
 
@@ -281,9 +301,8 @@ private fun MaritalStatusField(state: ProfileUiState, viewModel: ProfileViewMode
 @Composable
 private fun PhotoSection(state: ProfileUiState, onPick: () -> Unit, onUpload: () -> Unit) {
     val hasReadablePendingPhoto = state.pendingPhoto?.file?.let { it.exists() && it.canRead() } == true
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(R.string.profile_photo), fontWeight = FontWeight.SemiBold)
+    InstitutionalCard(modifier = Modifier.fillMaxWidth()) {
+            SectionHeader(stringResource(R.string.profile_photo), "La foto se guarda aparte del perfil")
             state.pendingPhoto?.let {
                 Image(
                     painter = rememberAsyncImagePainter(it.file),
@@ -301,13 +320,8 @@ private fun PhotoSection(state: ProfileUiState, onPick: () -> Unit, onUpload: ()
                 Text("Fotografia seleccionada, todavia no guardada.", style = MaterialTheme.typography.bodySmall)
             }
             state.fieldErrors["photo"]?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            OutlinedButton(onClick = onPick, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.profile_change_photo))
-            }
-            Button(onClick = onUpload, enabled = hasReadablePendingPhoto && !state.savingPhoto, modifier = Modifier.fillMaxWidth()) {
-                Text(if (state.savingPhoto) "Subiendo..." else stringResource(R.string.profile_upload_photo))
-            }
-        }
+            SecondaryButton(text = stringResource(R.string.profile_change_photo), onClick = onPick, modifier = Modifier.fillMaxWidth())
+            PrimaryButton(text = if (state.savingPhoto) "Subiendo..." else stringResource(R.string.profile_upload_photo), onClick = onUpload, enabled = hasReadablePendingPhoto && !state.savingPhoto, modifier = Modifier.fillMaxWidth())
     }
 }
 
@@ -318,9 +332,8 @@ private fun formatPhotoSize(sizeBytes: Long): String {
 
 @Composable
 private fun PasswordSection(state: ProfileUiState, viewModel: ProfileViewModel, onSubmit: () -> Unit) {
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(stringResource(R.string.profile_security), fontWeight = FontWeight.SemiBold)
+    InstitutionalCard(modifier = Modifier.fillMaxWidth()) {
+            SectionHeader(stringResource(R.string.profile_security), stringResource(R.string.profile_password_help))
             PasswordField("current_password", stringResource(R.string.profile_current_password), state.passwordForm.currentPassword, state) {
                 viewModel.updatePasswordForm { copy(currentPassword = it) }
             }
@@ -330,13 +343,8 @@ private fun PasswordSection(state: ProfileUiState, viewModel: ProfileViewModel, 
             PasswordField("password_confirmation", stringResource(R.string.register_password_confirmation), state.passwordForm.passwordConfirmation, state) {
                 viewModel.updatePasswordForm { copy(passwordConfirmation = it) }
             }
-            OutlinedButton(onClick = viewModel::togglePasswordVisibility, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(if (state.passwordVisible) R.string.login_hide_password else R.string.login_show_password))
-            }
-            Button(onClick = onSubmit, enabled = !state.savingPassword, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.profile_change_password))
-            }
-        }
+            SecondaryButton(text = stringResource(if (state.passwordVisible) R.string.login_hide_password else R.string.login_show_password), onClick = viewModel::togglePasswordVisibility, modifier = Modifier.fillMaxWidth())
+            PrimaryButton(text = stringResource(R.string.profile_change_password), onClick = onSubmit, enabled = !state.savingPassword, modifier = Modifier.fillMaxWidth())
     }
 }
 

@@ -90,6 +90,7 @@ class StoreRepository(
             dateFrom = filters.dateFrom,
             dateTo = filters.dateTo,
             code = filters.code.takeIf { it.isNotBlank() },
+            attentionOnly = filters.attentionOnly,
             page = filters.page,
             perPage = filters.perPage
         ).toResult { StoreOrderList(it.orders.map { order -> order.toDomain() }, it.pagination.toDomain()) }
@@ -183,6 +184,7 @@ data class StoreOrderFilters(
     val dateFrom: String? = null,
     val dateTo: String? = null,
     val code: String = "",
+    val attentionOnly: Boolean? = null,
     val page: Int? = null,
     val perPage: Int? = null
 )

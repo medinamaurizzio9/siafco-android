@@ -9,6 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import bo.org.siafco.app.AppContainer
+import bo.org.siafco.app.core.ui.CooperativeDestination
 import bo.org.siafco.app.feature.auth.LoginScreen
 import bo.org.siafco.app.feature.credential.CredentialScreen
 import bo.org.siafco.app.feature.credential.CredentialViewModel
@@ -116,15 +117,13 @@ fun SiafcoAppRoot(container: AppContainer, navController: NavHostController = re
                 onOpenCredential = {
                     navController.navigate(Routes.Credential)
                 },
-                onSubmitPayment = {
-                    navController.navigate(Routes.Payment)
-                },
                 onOpenStore = {
                     navController.navigate(Routes.Store)
                 },
                 onOpenStoreOrders = {
                     navController.navigate(Routes.StoreOrders)
                 },
+                onBottomDestination = { navController.navigateTopLevel(it) },
                 onLoggedOut = {
                     navController.navigate(Routes.Login) {
                         popUpTo<Routes.Home> { inclusive = true }
@@ -142,6 +141,7 @@ fun SiafcoAppRoot(container: AppContainer, navController: NavHostController = re
                         launchSingleTop = true
                     }
                 },
+                onBottomDestination = { navController.navigateTopLevel(it) },
                 onLoggedOut = {
                     navController.navigate(Routes.Login) {
                         popUpTo<Routes.Home> { inclusive = true }
@@ -204,7 +204,8 @@ fun SiafcoAppRoot(container: AppContainer, navController: NavHostController = re
                 onBack = { navController.popBackStack() },
                 onLoggedOut = { navController.toLoginFromHome() },
                 onOpenProduct = { navController.navigate(Routes.StoreProduct(it)) },
-                onOpenCart = { navController.navigate(Routes.StoreCart) }
+                onOpenCart = { navController.navigate(Routes.StoreCart) },
+                onBottomDestination = { navController.navigateTopLevel(it) }
             )
         }
         composable<Routes.StoreProduct> { entry ->
@@ -242,7 +243,8 @@ fun SiafcoAppRoot(container: AppContainer, navController: NavHostController = re
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() },
                 onLoggedOut = { navController.toLoginFromHome() },
-                onOpenOrder = { navController.navigate(Routes.StoreOrderDetail(it)) }
+                onOpenOrder = { navController.navigate(Routes.StoreOrderDetail(it)) },
+                onBottomDestination = { navController.navigateTopLevel(it) }
             )
         }
         composable<Routes.StoreOrderDetail> { entry ->
@@ -273,5 +275,20 @@ fun SiafcoAppRoot(container: AppContainer, navController: NavHostController = re
 private fun NavHostController.toLoginFromHome() {
     navigate(Routes.Login) {
         popUpTo<Routes.Home> { inclusive = true }
+    }
+}
+
+private fun NavHostController.navigateTopLevel(destination: CooperativeDestination) {
+    val route = when (destination) {
+        CooperativeDestination.Home -> Routes.Home
+        CooperativeDestination.Store -> Routes.Store
+        CooperativeDestination.Orders -> Routes.StoreOrders
+        CooperativeDestination.Credential -> Routes.Credential
+        CooperativeDestination.Profile -> Routes.Profile
+    }
+    navigate(route) {
+        popUpTo<Routes.Home> { saveState = true }
+        launchSingleTop = true
+        restoreState = true
     }
 }

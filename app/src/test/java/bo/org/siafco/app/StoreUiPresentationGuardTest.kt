@@ -31,14 +31,23 @@ class StoreUiPresentationGuardTest {
     }
 
     @Test
-    fun homeSplashAndLoginUseOfficialBrandHeader() {
+    fun splashAndLoginUseOfficialBrandHeaderButHomeStaysCompact() {
         listOf(
             "src/main/java/bo/org/siafco/app/feature/splash/SplashScreen.kt",
-            "src/main/java/bo/org/siafco/app/feature/auth/LoginScreen.kt",
-            "src/main/java/bo/org/siafco/app/feature/home/HomeScreen.kt"
+            "src/main/java/bo/org/siafco/app/feature/auth/LoginScreen.kt"
         ).forEach { path ->
             assertTrue("$path should use BrandHeader", projectFile(path).readText(Charsets.UTF_8).contains("BrandHeader("))
         }
+        val home = projectFile("src/main/java/bo/org/siafco/app/feature/home/HomeScreen.kt").readText(Charsets.UTF_8)
+        assertFalse(home.contains("BrandHeader("))
+        assertFalse(home.contains("AffiliationSummaryCard"))
+        assertFalse(home.contains("home_request_amount"))
+        assertFalse(home.contains("home_request_capabilities"))
+        assertTrue(home.contains("AffiliatePhoto"))
+        assertTrue(home.contains("PendingOrdersSection"))
+        assertTrue(home.contains("ServicesSection"))
+        assertTrue(home.contains("No pudimos actualizar tus pedidos"))
+        assertTrue(home.indexOf("SectionHeader(title = \"Pendientes\")") > home.indexOf("if (orders.isNotEmpty())"))
     }
 
     private fun projectFile(path: String): File =

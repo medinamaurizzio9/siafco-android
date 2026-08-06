@@ -87,6 +87,7 @@ interface SiafcoApi {
         @Query("date_from") dateFrom: String? = null,
         @Query("date_to") dateTo: String? = null,
         @Query("code") code: String? = null,
+        @Query("attention_only") attentionOnly: Boolean? = null,
         @Query("page") page: Int? = null,
         @Query("per_page") perPage: Int? = null
     ): Response<ApiEnvelope<StoreOrdersPayload>>

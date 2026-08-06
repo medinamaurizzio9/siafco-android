@@ -2,17 +2,11 @@ package bo.org.siafco.app.feature.auth
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -26,11 +20,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import bo.org.siafco.app.R
 import bo.org.siafco.app.core.ui.BrandHeader
+import bo.org.siafco.app.core.ui.CooperativeSpacing
+import bo.org.siafco.app.core.ui.CooperativeTextSecondary
+import bo.org.siafco.app.core.ui.InstitutionalCard
+import bo.org.siafco.app.core.ui.PrimaryButton
+import bo.org.siafco.app.core.ui.SecondaryButton
+import bo.org.siafco.app.core.ui.SecureTextField
 
 @Composable
 fun LoginScreen(
@@ -52,13 +50,9 @@ fun LoginScreen(
             verticalArrangement = Arrangement.Center
         ) {
             BrandHeader(logoSize = 112.dp)
-            Spacer(Modifier.height(24.dp))
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-            ) {
-                Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Text(text = stringResource(R.string.login_title), style = MaterialTheme.typography.titleLarge)
+            InstitutionalCard(modifier = Modifier.fillMaxWidth()) {
+                    Text(text = stringResource(R.string.login_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black)
+                    Text(text = stringResource(R.string.login_intro), style = MaterialTheme.typography.bodyMedium, color = CooperativeTextSecondary)
                     OutlinedTextField(
                         value = state.email,
                         onValueChange = viewModel::onEmailChange,
@@ -77,14 +71,12 @@ fun LoginScreen(
                         },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
                     )
-                    OutlinedTextField(
+                    SecureTextField(
                         value = state.password,
                         onValueChange = viewModel::onPasswordChange,
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text(stringResource(R.string.login_password)) },
-                        singleLine = true,
+                        label = stringResource(R.string.login_password),
+                        visible = state.passwordVisible,
                         isError = state.passwordError,
-                        visualTransformation = if (state.passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
                             TextButton(onClick = viewModel::togglePasswordVisibility) {
                                 Text(
@@ -106,21 +98,8 @@ fun LoginScreen(
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
-                    Button(
-                        onClick = viewModel::login,
-                        enabled = !state.loading,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(stringResource(R.string.login_submit))
-                    }
-                    OutlinedButton(
-                        onClick = onRegister,
-                        enabled = !state.loading,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(stringResource(R.string.login_register))
-                    }
-                }
+                    PrimaryButton(text = stringResource(R.string.login_submit), onClick = viewModel::login, enabled = !state.loading, modifier = Modifier.fillMaxWidth())
+                    SecondaryButton(text = stringResource(R.string.login_register), onClick = onRegister, enabled = !state.loading, modifier = Modifier.fillMaxWidth())
             }
         }
     }

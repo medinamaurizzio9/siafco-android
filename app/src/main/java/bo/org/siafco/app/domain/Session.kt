@@ -8,7 +8,9 @@ data class SessionProfile(
     val accessLevel: AccessLevel,
     val hasAffiliateProfile: Boolean = false,
     val allowedProfileFields: Set<String> = emptySet(),
-    val requestCode: String? = null
+    val requestCode: String? = null,
+    val photoUrl: String? = null,
+    val registrationNumber: String? = null
 )
 
 enum class AccessLevel {

@@ -4,11 +4,12 @@
     <string name="splash_title">COOPERATIVA TIERRA BENDITA</string>
     <string name="splash_subtitle">App Afiliado</string>
     <string name="brand_logo_content_description">Logo de Cooperativa Tierra Bendita</string>
-    <string name="login_title">Iniciar sesión</string>
+    <string name="login_title">Bienvenido</string>
+    <string name="login_intro">Ingresa con tu cuenta de afiliado para consultar tu perfil, credencial y servicios.</string>
     <string name="login_email">Correo electrónico</string>
     <string name="login_password">Contraseña</string>
     <string name="login_submit">Iniciar sesión</string>
-    <string name="login_register">Solicitar afiliación</string>
+    <string name="login_register">Quiero afiliarme</string>
     <string name="login_show_password">Mostrar contraseña</string>
     <string name="login_hide_password">Ocultar contraseña</string>
     <string name="login_email_required">Ingresa tu correo electrónico.</string>
