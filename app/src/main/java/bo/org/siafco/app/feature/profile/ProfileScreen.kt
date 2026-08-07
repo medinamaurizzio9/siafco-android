@@ -1,6 +1,4 @@
 package bo.org.siafco.app.feature.profile
-
-import android.app.DatePickerDialog
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -48,7 +46,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -65,6 +62,7 @@ import bo.org.siafco.app.core.ui.CooperativeDestination
 import bo.org.siafco.app.core.ui.CooperativeSpacing
 import bo.org.siafco.app.core.ui.CooperativeTextSecondary
 import bo.org.siafco.app.core.ui.FigmaGold
+import bo.org.siafco.app.core.ui.FigmaDateField
 import bo.org.siafco.app.core.ui.FigmaNavyDeep
 import bo.org.siafco.app.core.ui.InstitutionalCard
 import bo.org.siafco.app.core.ui.NormalizedTextField
@@ -88,7 +86,6 @@ fun ProfileScreen(
     onLoggedOut: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
-    val context = LocalContext.current
     var confirmEmail by remember { mutableStateOf(false) }
     var confirmPassword by remember { mutableStateOf(false) }
     var photoFlowVisible by remember { mutableStateOf(false) }
@@ -163,7 +160,7 @@ fun ProfileScreen(
                         )
                         when (openAction) {
                             ProfileAction.Edit -> {
-                                EditableProfileCard(state = state, onPickDate = { showBirthDatePicker(context, state, viewModel) }, viewModel = viewModel)
+                                EditableProfileCard(state = state, viewModel = viewModel)
                                 PrimaryButton(
                                     text = if (state.savingProfile) "Guardando..." else stringResource(R.string.profile_save),
                                     onClick = { if (state.form.email != profile.email) confirmEmail = true else viewModel.saveProfile() },
@@ -201,17 +198,6 @@ fun ProfileScreen(
 private enum class ProfileAction {
     Edit,
     Password
-}
-
-private fun showBirthDatePicker(context: android.content.Context, state: ProfileUiState, viewModel: ProfileViewModel) {
-    val initial = runCatching { LocalDate.parse(state.form.birthDate) }.getOrDefault(LocalDate.now().minusYears(25))
-    DatePickerDialog(
-        context,
-        { _, year, month, day -> viewModel.updateForm { copy(birthDate = backendBirthDateFromParts(year, month, day)) } },
-        initial.year,
-        initial.monthValue - 1,
-        initial.dayOfMonth
-    ).show()
 }
 
 @Composable
@@ -420,28 +406,26 @@ private fun ProtectedDataCard(profile: MobileProfile) {
 }
 
 @Composable
-private fun EditableProfileCard(state: ProfileUiState, onPickDate: () -> Unit, viewModel: ProfileViewModel) {
+private fun EditableProfileCard(state: ProfileUiState, viewModel: ProfileViewModel) {
     InstitutionalCard(modifier = Modifier.fillMaxWidth()) {
             SectionHeader(stringResource(R.string.profile_editable), "Actualiza solo los campos permitidos")
             Field("phone", stringResource(R.string.register_phone), state.form.phone, state.fieldErrors, KeyboardType.Phone) { viewModel.updateForm { copy(phone = it) } }
             Field("email", stringResource(R.string.login_email), state.form.email, state.fieldErrors, KeyboardType.Email) { viewModel.updateForm { copy(email = it) } }
             Field("address", stringResource(R.string.register_address), state.form.address, state.fieldErrors, humanText = true) { viewModel.updateForm { copy(address = it) } }
-            BirthDateField(state = state, onPickDate = onPickDate)
+            BirthDateField(state = state, viewModel = viewModel)
             MaritalStatusField(state = state, viewModel = viewModel)
     }
 }
 
 @Composable
-private fun BirthDateField(state: ProfileUiState, onPickDate: () -> Unit) {
-    OutlinedTextField(
-        value = state.form.birthDate.takeIf(String::isNotBlank)?.let(::formatBirthDateForDisplay).orEmpty(),
-        onValueChange = {},
-        label = { Text(stringResource(R.string.register_birth_date)) },
+private fun BirthDateField(state: ProfileUiState, viewModel: ProfileViewModel) {
+    FigmaDateField(
+        value = state.form.birthDate,
+        onValueChange = { value -> viewModel.updateForm { copy(birthDate = value) } },
+        label = stringResource(R.string.register_birth_date),
         modifier = Modifier.fillMaxWidth(),
-        readOnly = true,
-        trailingIcon = { TextButton(onClick = onPickDate) { Text(stringResource(R.string.payment_pick_date)) } },
-        isError = state.fieldErrors.containsKey("birth_date"),
-        supportingText = { state.fieldErrors["birth_date"]?.let { Text(it) } }
+        error = state.fieldErrors["birth_date"],
+        maxSelectableDate = LocalDate.now()
     )
 }
 

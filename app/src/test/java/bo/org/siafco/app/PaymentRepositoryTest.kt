@@ -44,6 +44,8 @@ class PaymentRepositoryTest {
         assertTrue(result is PaymentRepositoryResult.Success)
         assertEquals("payment_submitted", (result as PaymentRepositoryResult.Success).request.status)
         assertEquals("pending", result.request.paymentStatus)
+        assertEquals("http://10.0.2.2:8000/storage/institutional/payment/payment-qr.png?v=123", result.request.paymentQrUrl)
+        assertEquals("70000000", result.request.supportPhone)
         val request = server.takeRequest()
         assertEquals("/api/mobile/v1/me/affiliation-request/payment", request.url.encodedPath)
         assertEquals("550e8400-e29b-41d4-a716-446655440000", request.headers["Idempotency-Key"])
@@ -140,7 +142,14 @@ class PaymentRepositoryTest {
                     "rejection_reason": null,
                     "has_receipt": true
                   },
-                  "payment_instructions": {"bank":null,"holder":null,"account":null,"instructions":null},
+                  "payment_instructions": {
+                    "bank": null,
+                    "holder": null,
+                    "account": null,
+                    "instructions": null,
+                    "qr_url": "http://127.0.0.1:8000/storage/institutional/payment/payment-qr.png?v=123",
+                    "support_phone": "70000000"
+                  },
                   "capabilities": {"can_submit_payment":true,"can_login":true,"can_view_credential":false}
                 }
               }

@@ -68,6 +68,7 @@ import bo.org.siafco.app.R
 import bo.org.siafco.app.core.text.HumanTextInputNormalizer
 import bo.org.siafco.app.core.text.TextInputNormalization
 import bo.org.siafco.app.core.ui.FigmaGold
+import bo.org.siafco.app.core.ui.FigmaDateField
 import bo.org.siafco.app.core.ui.FigmaMuted
 import bo.org.siafco.app.core.ui.FigmaNavy
 import bo.org.siafco.app.core.ui.FigmaNavyDeep
@@ -78,6 +79,7 @@ import bo.org.siafco.app.domain.CatalogPlan
 import bo.org.siafco.app.domain.CatalogSector
 import bo.org.siafco.app.feature.photo.PhotoInputFlow
 import coil3.compose.rememberAsyncImagePainter
+import java.time.LocalDate
 
 @Composable
 fun RegisterAffiliationScreen(
@@ -324,9 +326,14 @@ private fun IdentityStep(state: RegisterAffiliationUiState, viewModel: RegisterA
         optionLabel = { it.label },
         onSelected = { viewModel.updateForm { current -> current.copy(issuedIn = it.value) } }
     )
-    Field(R.string.register_birth_date, form.birthDate, state.fieldErrors["birth_date"], KeyboardType.Number) {
-        viewModel.updateForm { current -> current.copy(birthDate = it) }
-    }
+    FigmaDateField(
+        value = form.birthDate,
+        onValueChange = { value -> viewModel.updateForm { current -> current.copy(birthDate = value) } },
+        label = stringResource(R.string.register_birth_date),
+        modifier = Modifier.fillMaxWidth(),
+        error = state.fieldErrors["birth_date"],
+        maxSelectableDate = LocalDate.now()
+    )
     MenuField(
         label = stringResource(R.string.register_marital_status),
         value = form.maritalStatus,

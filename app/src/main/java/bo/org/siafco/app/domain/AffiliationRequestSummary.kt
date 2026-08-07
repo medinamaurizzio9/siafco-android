@@ -23,6 +23,8 @@ data class AffiliationRequestSummary(
     val paymentHolder: String? = null,
     val paymentAccount: String? = null,
     val paymentInstructions: String? = null,
+    val paymentQrUrl: String? = null,
+    val supportPhone: String? = null,
     val canSubmitPayment: Boolean,
     val canLogin: Boolean,
     val canViewCredential: Boolean

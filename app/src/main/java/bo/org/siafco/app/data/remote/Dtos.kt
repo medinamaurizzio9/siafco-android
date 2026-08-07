@@ -114,7 +114,9 @@ data class MobilePaymentInstructionsDto(
     val bank: String? = null,
     val holder: String? = null,
     val account: String? = null,
-    val instructions: String? = null
+    val instructions: String? = null,
+    @SerialName("qr_url") val qrUrl: String? = null,
+    @SerialName("support_phone") val supportPhone: String? = null
 )
 
 @Serializable

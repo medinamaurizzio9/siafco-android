@@ -3,6 +3,7 @@ package bo.org.siafco.app.data.repository
 import bo.org.siafco.app.data.remote.ApiEnvelope
 import bo.org.siafco.app.data.remote.MobileAffiliationRequestDto
 import bo.org.siafco.app.data.remote.SiafcoApi
+import bo.org.siafco.app.core.network.UrlResolver
 import bo.org.siafco.app.domain.AffiliationRequestSummary
 import bo.org.siafco.app.domain.NormalizedPaymentPayload
 import bo.org.siafco.app.domain.PreparedReceipt
@@ -119,6 +120,8 @@ class PaymentRepository(private val api: SiafcoApi) : PaymentGateway {
             paymentHolder = paymentInstructions?.holder,
             paymentAccount = paymentInstructions?.account,
             paymentInstructions = paymentInstructions?.instructions,
+            paymentQrUrl = paymentInstructions?.qrUrl?.let(UrlResolver::resolve),
+            supportPhone = paymentInstructions?.supportPhone,
             canSubmitPayment = capabilities?.canSubmitPayment == true,
             canLogin = capabilities?.canLogin == true,
             canViewCredential = capabilities?.canViewCredential == true

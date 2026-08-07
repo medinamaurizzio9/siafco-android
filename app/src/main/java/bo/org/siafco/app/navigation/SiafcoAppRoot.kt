@@ -104,7 +104,7 @@ fun SiafcoAppRoot(container: AppContainer, navController: NavHostController = re
             RegisterAffiliationScreen(
                 viewModel = viewModel,
                 onCompleted = {
-                    navController.navigate(Routes.Home) {
+                    navController.navigate(Routes.AffiliationRequest) {
                         popUpTo<Routes.RegisterAffiliation> { inclusive = true }
                     }
                 },

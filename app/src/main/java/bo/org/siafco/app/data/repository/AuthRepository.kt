@@ -2,6 +2,7 @@ package bo.org.siafco.app.data.repository
 
 import bo.org.siafco.app.core.data.TokenStore
 import bo.org.siafco.app.core.network.ApiResult
+import bo.org.siafco.app.core.network.UrlResolver
 import bo.org.siafco.app.data.remote.ApiEnvelope
 import bo.org.siafco.app.data.remote.AffiliationRequestPayload
 import bo.org.siafco.app.data.remote.LoginRequest
@@ -126,6 +127,8 @@ class AuthRepository(
             paymentHolder = paymentInstructions?.holder,
             paymentAccount = paymentInstructions?.account,
             paymentInstructions = paymentInstructions?.instructions,
+            paymentQrUrl = paymentInstructions?.qrUrl?.let(UrlResolver::resolve),
+            supportPhone = paymentInstructions?.supportPhone,
             canSubmitPayment = capabilities?.canSubmitPayment == true,
             canLogin = capabilities?.canLogin == true,
             canViewCredential = capabilities?.canViewCredential == true
