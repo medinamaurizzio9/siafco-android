@@ -4,6 +4,7 @@ import android.app.DatePickerDialog
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,6 +29,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -44,10 +46,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -59,7 +64,8 @@ import bo.org.siafco.app.core.ui.CooperativeBottomBar
 import bo.org.siafco.app.core.ui.CooperativeDestination
 import bo.org.siafco.app.core.ui.CooperativeSpacing
 import bo.org.siafco.app.core.ui.CooperativeTextSecondary
-import bo.org.siafco.app.core.ui.CooperativeTopBar
+import bo.org.siafco.app.core.ui.FigmaGold
+import bo.org.siafco.app.core.ui.FigmaNavyDeep
 import bo.org.siafco.app.core.ui.InstitutionalCard
 import bo.org.siafco.app.core.ui.NormalizedTextField
 import bo.org.siafco.app.core.ui.PrimaryButton
@@ -72,6 +78,7 @@ import bo.org.siafco.app.feature.photo.PhotoInputFlow
 import coil3.compose.AsyncImage
 import coil3.compose.rememberAsyncImagePainter
 import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun ProfileScreen(
@@ -85,6 +92,7 @@ fun ProfileScreen(
     var confirmEmail by remember { mutableStateOf(false) }
     var confirmPassword by remember { mutableStateOf(false) }
     var photoFlowVisible by remember { mutableStateOf(false) }
+    var openAction by remember { mutableStateOf<ProfileAction?>(null) }
 
     fun leaveProfile() {
         viewModel.clearSensitiveData()
@@ -119,7 +127,6 @@ fun ProfileScreen(
 
     val active = state.profile?.status == "activo"
     Scaffold(
-        topBar = { CooperativeTopBar(title = stringResource(R.string.profile_title), onBack = ::leaveProfile) },
         bottomBar = {
             CooperativeBottomBar(
                 selected = CooperativeDestination.Profile,
@@ -129,34 +136,51 @@ fun ProfileScreen(
             )
         }
     ) { padding ->
-        Surface(modifier = Modifier.fillMaxSize().padding(padding), color = MaterialTheme.colorScheme.background) {
+        Surface(modifier = Modifier.fillMaxSize().padding(padding), color = Color.White) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                    .padding(bottom = 32.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 if (state.loading && state.profile == null) {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally).padding(32.dp))
                 }
 
                 state.profile?.let { profile ->
-                    ProfileHeader(profile = profile, state = state)
-                    ProtectedDataCard(profile)
-                    EditableProfileCard(state = state, onPickDate = { showBirthDatePicker(context, state, viewModel) }, viewModel = viewModel)
-                    PrimaryButton(
-                        text = if (state.savingProfile) "Guardando..." else stringResource(R.string.profile_save),
-                        onClick = { if (state.form.email != profile.email) confirmEmail = true else viewModel.saveProfile() },
-                        enabled = !state.savingProfile,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    PhotoSection(
+                    ProfileHeader(
+                        profile = profile,
                         state = state,
-                        onPick = { photoFlowVisible = true },
-                        onUpload = viewModel::savePhoto
+                        onBack = ::leaveProfile,
+                        onChangePhoto = { photoFlowVisible = true }
                     )
-                    PasswordSection(state = state, viewModel = viewModel, onSubmit = { confirmPassword = true })
+                    Column(modifier = Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        PersonalDataCard(profile)
+                        ProfileActionsCard(
+                            onEditProfile = { openAction = ProfileAction.Edit },
+                            onChangePassword = { openAction = ProfileAction.Password }
+                        )
+                        when (openAction) {
+                            ProfileAction.Edit -> {
+                                EditableProfileCard(state = state, onPickDate = { showBirthDatePicker(context, state, viewModel) }, viewModel = viewModel)
+                                PrimaryButton(
+                                    text = if (state.savingProfile) "Guardando..." else stringResource(R.string.profile_save),
+                                    onClick = { if (state.form.email != profile.email) confirmEmail = true else viewModel.saveProfile() },
+                                    enabled = !state.savingProfile,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                            ProfileAction.Password -> PasswordSection(state = state, viewModel = viewModel, onSubmit = { confirmPassword = true })
+                            null -> Unit
+                        }
+                        if (state.pendingPhoto != null) {
+                            PhotoSection(
+                                state = state,
+                                onUpload = viewModel::savePhoto
+                            )
+                        }
+                    }
                 }
 
                 state.message?.let { Text(stringResource(it.resId), color = MaterialTheme.colorScheme.error) }
@@ -167,9 +191,16 @@ fun ProfileScreen(
     PhotoInputFlow(
         visible = photoFlowVisible,
         onDismiss = { photoFlowVisible = false },
-        onPrepared = viewModel::setPhoto,
+        onPrepared = {
+            viewModel.setPhoto(it)
+        },
         onError = viewModel::onPhotoError
     )
+}
+
+private enum class ProfileAction {
+    Edit,
+    Password
 }
 
 private fun showBirthDatePicker(context: android.content.Context, state: ProfileUiState, viewModel: ProfileViewModel) {
@@ -184,14 +215,76 @@ private fun showBirthDatePicker(context: android.content.Context, state: Profile
 }
 
 @Composable
-private fun ProfileHeader(profile: MobileProfile, state: ProfileUiState) {
-    InstitutionalCard(modifier = Modifier.fillMaxWidth(), tonal = true) {
-        Row(horizontalArrangement = Arrangement.spacedBy(CooperativeSpacing.md), verticalAlignment = Alignment.CenterVertically) {
-            ProfilePhoto(profile = profile, state = state, modifier = Modifier.size(88.dp))
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(profile.fullName, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
-                profile.registrationNumber?.let { Text("Registro $it", style = MaterialTheme.typography.bodyMedium, color = CooperativeTextSecondary) }
-                StatusBadge(profile.statusLabel ?: profile.status.orEmpty(), tone = if (profile.status == "activo") StatusTone.Success else StatusTone.Warning)
+private fun ProfileHeader(
+    profile: MobileProfile,
+    state: ProfileUiState,
+    onBack: () -> Unit,
+    onChangePhoto: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(FigmaNavyDeep, RoundedCornerShape(bottomStart = 34.dp, bottomEnd = 34.dp))
+            .padding(horizontal = 24.dp, vertical = 30.dp)
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.dp), modifier = Modifier.fillMaxWidth()) {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Card(
+                    onClick = onBack,
+                    shape = CircleShape,
+                    colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.12f)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                ) {
+                    Box(modifier = Modifier.size(46.dp), contentAlignment = Alignment.Center) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_arrow_back),
+                            contentDescription = stringResource(R.string.register_back),
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+                Text(
+                    text = stringResource(R.string.profile_title),
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Black,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f)
+                )
+                Box(modifier = Modifier.size(46.dp))
+            }
+            Box(contentAlignment = Alignment.BottomEnd) {
+                Box(
+                    modifier = Modifier
+                        .size(118.dp)
+                        .clip(CircleShape)
+                        .border(4.dp, FigmaGold, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    ProfilePhoto(profile = profile, state = state, modifier = Modifier.fillMaxSize())
+                }
+                Card(
+                    onClick = onChangePhoto,
+                    shape = CircleShape,
+                    colors = CardDefaults.cardColors(containerColor = FigmaGold),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                    modifier = Modifier.size(38.dp)
+                ) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_profile_camera),
+                            contentDescription = stringResource(R.string.profile_change_photo),
+                            tint = FigmaNavyDeep,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+            Text(profile.fullName, color = Color.White, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black, textAlign = TextAlign.Center)
+            StatusBadge(profile.statusLabel ?: profile.status.orEmpty(), tone = if (profile.status == "activo") StatusTone.Success else StatusTone.Warning)
+            profile.registrationNumber?.let {
+                Text("Afiliado N° $it", color = FigmaGold, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -223,6 +316,92 @@ private fun ProfilePhoto(profile: MobileProfile, state: ProfileUiState, modifier
             else -> Text(profile.fullName.take(1).uppercase(), style = MaterialTheme.typography.headlineMedium)
         }
     }
+}
+
+@Composable
+private fun PersonalDataCard(profile: MobileProfile) {
+    InstitutionalCard(modifier = Modifier.fillMaxWidth()) {
+        SectionHeader("Datos personales", "Información real registrada en SIAFCO")
+        ProfileInfoRow(R.drawable.ic_profile_shield, "Cédula de identidad", profile.ci)
+        ProfileInfoRow(R.drawable.ic_mail, "Correo electrónico", profile.email)
+        ProfileInfoRow(R.drawable.ic_profile_phone, "Teléfono móvil", profile.phone)
+        ProfileInfoRow(R.drawable.ic_profile_location, "Dirección de domicilio", profile.address)
+        ProfileInfoRow(R.drawable.ic_profile_calendar, "Fecha de nacimiento", formatProfileDate(profile.birthDate))
+        ProfileInfoRow(R.drawable.ic_service_request, "Número de afiliado", profile.registrationNumber)
+        ProfileInfoRow(R.drawable.ic_nav_store, "Sector", profile.sectorName)
+        ProfileInfoRow(R.drawable.ic_profile_shield, "Plan", profile.planName)
+        ProfileInfoRow(R.drawable.ic_profile_location, "Regional", profile.regional)
+        ProfileInfoRow(R.drawable.ic_profile_shield, "Institución", profile.institution)
+        ProfileInfoRow(R.drawable.ic_profile_edit, "Cargo", profile.position)
+        ProfileInfoRow(R.drawable.ic_profile_shield, "Estado", profile.statusLabel ?: profile.status)
+    }
+}
+
+@Composable
+private fun ProfileActionsCard(
+    onEditProfile: () -> Unit,
+    onChangePassword: () -> Unit
+) {
+    InstitutionalCard(modifier = Modifier.fillMaxWidth()) {
+        SectionHeader("Acciones", "Administra tu información de afiliado")
+        PrimaryButton(
+            text = "Editar Perfil",
+            onClick = onEditProfile,
+            modifier = Modifier.fillMaxWidth()
+        )
+        SecondaryButton(
+            text = "Cambiar Contraseña",
+            onClick = onChangePassword,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
+@Composable
+private fun ProfileInfoRow(iconRes: Int, label: String, value: String?) {
+    if (value.isNullOrBlank()) return
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(42.dp)
+                .background(FigmaGold.copy(alpha = 0.16f), RoundedCornerShape(14.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = null,
+                tint = FigmaNavyDeep,
+                modifier = Modifier.size(21.dp)
+            )
+        }
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = CooperativeTextSecondary,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyLarge,
+                color = FigmaNavyDeep,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+private fun formatProfileDate(value: String?): String? {
+    if (value.isNullOrBlank()) return null
+    return runCatching {
+        LocalDate.parse(value).format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+    }.getOrDefault(value)
 }
 
 @Composable
@@ -299,7 +478,7 @@ private fun MaritalStatusField(state: ProfileUiState, viewModel: ProfileViewMode
 }
 
 @Composable
-private fun PhotoSection(state: ProfileUiState, onPick: () -> Unit, onUpload: () -> Unit) {
+private fun PhotoSection(state: ProfileUiState, onUpload: () -> Unit) {
     val hasReadablePendingPhoto = state.pendingPhoto?.file?.let { it.exists() && it.canRead() } == true
     InstitutionalCard(modifier = Modifier.fillMaxWidth()) {
             SectionHeader(stringResource(R.string.profile_photo), "La foto se guarda aparte del perfil")
@@ -320,7 +499,6 @@ private fun PhotoSection(state: ProfileUiState, onPick: () -> Unit, onUpload: ()
                 Text("Fotografia seleccionada, todavia no guardada.", style = MaterialTheme.typography.bodySmall)
             }
             state.fieldErrors["photo"]?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            SecondaryButton(text = stringResource(R.string.profile_change_photo), onClick = onPick, modifier = Modifier.fillMaxWidth())
             PrimaryButton(text = if (state.savingPhoto) "Subiendo..." else stringResource(R.string.profile_upload_photo), onClick = onUpload, enabled = hasReadablePendingPhoto && !state.savingPhoto, modifier = Modifier.fillMaxWidth())
     }
 }
