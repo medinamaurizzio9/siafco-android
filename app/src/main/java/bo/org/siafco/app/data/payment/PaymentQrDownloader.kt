@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import androidx.annotation.RequiresApi
 import androidx.core.content.getSystemService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -33,6 +34,7 @@ object PaymentQrDownloader {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     private fun saveWithMediaStore(context: Context, uri: Uri): PaymentQrDownloadResult {
         val resolver = context.contentResolver
         val values = ContentValues().apply {

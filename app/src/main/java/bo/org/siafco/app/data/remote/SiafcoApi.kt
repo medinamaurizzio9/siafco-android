@@ -72,6 +72,9 @@ interface SiafcoApi {
     @GET("store/products/{publicCode}")
     suspend fun storeProduct(@Path("publicCode") publicCode: String): Response<ApiEnvelope<StoreProductPayload>>
 
+    @GET("store/delivery-destinations")
+    suspend fun storeDeliveryDestinations(): Response<ApiEnvelope<List<StoreDeliveryDestinationDto>>>
+
     @POST("store/quote")
     suspend fun storeQuote(@Body request: StoreQuoteRequest): Response<ApiEnvelope<StoreQuotePayload>>
 

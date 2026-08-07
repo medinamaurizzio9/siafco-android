@@ -60,7 +60,7 @@ class SiafcoViewModelFactory(
                 CredentialViewModel(credentialRepository)
             }
             modelClass.isAssignableFrom(StoreCatalogViewModel::class.java) -> {
-                StoreCatalogViewModel(storeRepository)
+                StoreCatalogViewModel(storeRepository, storeCartStore, authRepository)
             }
             modelClass.isAssignableFrom(StoreProductViewModel::class.java) -> {
                 StoreProductViewModel(storeRepository, storeCartStore)

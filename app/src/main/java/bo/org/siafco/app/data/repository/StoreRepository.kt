@@ -6,7 +6,10 @@ import bo.org.siafco.app.data.remote.SiafcoApi
 import bo.org.siafco.app.data.remote.StoreCatalogPayload
 import bo.org.siafco.app.data.remote.StoreCategoryDto
 import bo.org.siafco.app.data.remote.StoreCouponDto
+import bo.org.siafco.app.data.remote.StoreDeliveryCityDto
+import bo.org.siafco.app.data.remote.StoreDeliveryDestinationDto
 import bo.org.siafco.app.data.remote.StoreDeliveryDto
+import bo.org.siafco.app.data.remote.StoreDeliveryZoneDto
 import bo.org.siafco.app.data.remote.StoreImageDto
 import bo.org.siafco.app.data.remote.StoreOrderCapabilitiesDto
 import bo.org.siafco.app.data.remote.StoreOrderDto
@@ -30,6 +33,9 @@ import bo.org.siafco.app.domain.StoreCatalog
 import bo.org.siafco.app.domain.StoreCategory
 import bo.org.siafco.app.domain.StoreCoupon
 import bo.org.siafco.app.domain.StoreDelivery
+import bo.org.siafco.app.domain.StoreDeliveryCity
+import bo.org.siafco.app.domain.StoreDeliveryDestination
+import bo.org.siafco.app.domain.StoreDeliveryZone
 import bo.org.siafco.app.domain.StoreImage
 import bo.org.siafco.app.domain.StoreOrder
 import bo.org.siafco.app.domain.StoreOrderCapabilities
@@ -74,6 +80,10 @@ class StoreRepository(
 
     override suspend fun product(publicCode: String): StoreResult<StoreProduct> = safeCall {
         api.storeProduct(publicCode).toResult { it.product.toDomain() }
+    }
+
+    override suspend fun deliveryDestinations(): StoreResult<List<StoreDeliveryDestination>> = safeCall {
+        api.storeDeliveryDestinations().toResult { destinations -> destinations.map { it.toDomain() } }
     }
 
     override suspend fun quote(request: StoreQuoteRequestData): StoreResult<StoreQuote> = safeCall {
@@ -162,6 +172,7 @@ class StoreRepository(
 interface StoreGateway {
     suspend fun catalog(filters: StoreCatalogFilters = StoreCatalogFilters()): StoreResult<StoreCatalog>
     suspend fun product(publicCode: String): StoreResult<StoreProduct>
+    suspend fun deliveryDestinations(): StoreResult<List<StoreDeliveryDestination>>
     suspend fun quote(request: StoreQuoteRequestData): StoreResult<StoreQuote>
     suspend fun createOrder(idempotencyKey: String, request: StoreQuoteRequestData): StoreResult<StoreOrder>
     suspend fun orders(filters: StoreOrderFilters = StoreOrderFilters()): StoreResult<StoreOrderList>
@@ -245,6 +256,18 @@ private fun StorePaymentSettingsDto.toDomain(): StorePaymentSettings = StorePaym
     account = account,
     instructions = instructions
 )
+
+private fun StoreDeliveryDestinationDto.toDomain(): StoreDeliveryDestination = StoreDeliveryDestination(
+    department = department,
+    cities = cities.map { it.toDomain() }
+)
+
+private fun StoreDeliveryCityDto.toDomain(): StoreDeliveryCity = StoreDeliveryCity(
+    city = city,
+    zones = zones.map { it.toDomain() }
+)
+
+private fun StoreDeliveryZoneDto.toDomain(): StoreDeliveryZone = StoreDeliveryZone(zone)
 
 private fun StoreCategoryDto.toDomain(): StoreCategory = StoreCategory(slug = slug, name = name)
 
@@ -349,7 +372,8 @@ private fun StoreOrderItemDto.toDomain(): StoreOrderItem = StoreOrderItem(
     unitPrice = unitPrice,
     quantity = quantity,
     discountTotal = discountTotal,
-    lineTotal = lineTotal
+    lineTotal = lineTotal,
+    primaryImageUrl = primaryImageUrl?.let(UrlResolver::resolve)
 )
 
 private fun StoreOrderPaymentDto.toDomain(): StoreOrderPayment = StoreOrderPayment(status, message)

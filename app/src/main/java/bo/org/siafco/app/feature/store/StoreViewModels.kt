@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import bo.org.siafco.app.core.text.HumanTextInputNormalizer
 import bo.org.siafco.app.core.text.TextInputNormalization
+import bo.org.siafco.app.data.repository.AuthGateway
 import bo.org.siafco.app.data.repository.StoreCatalogFilters
 import bo.org.siafco.app.data.repository.StoreGateway
 import bo.org.siafco.app.data.repository.StoreResult
@@ -13,6 +14,8 @@ import bo.org.siafco.app.data.store.storePayloadSignature
 import bo.org.siafco.app.domain.StoreCartLine
 import bo.org.siafco.app.domain.StoreAvailability
 import bo.org.siafco.app.domain.StoreCatalog
+import bo.org.siafco.app.domain.StoreDeliveryCity
+import bo.org.siafco.app.domain.StoreDeliveryDestination
 import bo.org.siafco.app.domain.StoreOrder
 import bo.org.siafco.app.domain.StorePagination
 import bo.org.siafco.app.domain.PreparedReceipt
@@ -26,14 +29,26 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.UUID
 
 class StoreCatalogViewModel(
-    private val store: StoreGateway
+    private val store: StoreGateway,
+    private val cart: StoreCartStore,
+    private val auth: AuthGateway
 ) : ViewModel() {
     private val _state = MutableStateFlow(StoreCatalogUiState())
     val state: StateFlow<StoreCatalogUiState> = _state.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            cart.lines.collectLatest { lines ->
+                _state.update { it.copy(cartCount = lines.sumOf(StoreCartLine::quantity)) }
+            }
+        }
+    }
 
     fun load(force: Boolean = false) {
         if (_state.value.loading || (_state.value.catalog != null && !force)) return
@@ -56,12 +71,30 @@ class StoreCatalogViewModel(
     }
 
     fun applySearch() = load(force = true)
+
+    fun addToCart(product: StoreProduct) {
+        if (!product.canAddToCart(selectedVariantPublicCode = null, quantity = 1)) return
+        viewModelScope.launch {
+            cart.add(StoreCartLine(product.publicCode, quantity = 1, imageUrl = product.primaryImageUrl))
+        }
+    }
+
+    fun logout() {
+        if (_state.value.loggingOut) return
+        viewModelScope.launch {
+            _state.update { it.copy(loggingOut = true, message = null) }
+            auth.logout()
+            _state.update { it.copy(loggingOut = false, loggedOut = true) }
+        }
+    }
 }
 
 data class StoreCatalogUiState(
     val loading: Boolean = false,
     val catalog: StoreCatalog? = null,
     val filters: StoreCatalogFilters = StoreCatalogFilters(perPage = 20),
+    val cartCount: Int = 0,
+    val loggingOut: Boolean = false,
     val message: UiMessage? = null,
     val loggedOut: Boolean = false
 )
@@ -118,7 +151,7 @@ class StoreProductViewModel(
         if (current.adding || !current.canAddToCart) return
         _state.update { it.copy(adding = true) }
         viewModelScope.launch {
-            cart.add(StoreCartLine(product.publicCode, current.selectedVariantPublicCode, current.quantity))
+            cart.add(StoreCartLine(product.publicCode, current.selectedVariantPublicCode, current.quantity, product.primaryImageUrl))
             _state.update { it.copy(added = true, adding = false) }
         }
     }
@@ -219,12 +252,14 @@ class StoreCheckoutViewModel(
     private val _state = MutableStateFlow(StoreCheckoutUiState())
     val state: StateFlow<StoreCheckoutUiState> = _state.asStateFlow()
     private var quoteVersion = 0
+    private var quoteJob: Job? = null
+    private var lastQuoteSignature: String? = null
 
     init {
         viewModelScope.launch {
             cart.lines.collectLatest { lines ->
-                _state.update { it.copy(lines = lines) }
-                if (lines.isNotEmpty()) quote()
+                _state.update { it.copy(lines = lines, quote = if (lines.isEmpty()) null else it.quote) }
+                if (lines.isNotEmpty()) scheduleQuote(immediate = true)
             }
         }
         viewModelScope.launch {
@@ -233,37 +268,68 @@ class StoreCheckoutViewModel(
                 else -> Unit
             }
         }
+        viewModelScope.launch {
+            when (val result = store.deliveryDestinations()) {
+                is StoreResult.Success -> _state.update { it.copy(deliveryDestinations = result.value) }
+                else -> _state.update { it.copy(message = result.toUiMessage(), loggedOut = result is StoreResult.Unauthorized) }
+            }
+        }
     }
 
     fun updateForm(block: StoreCheckoutForm.() -> StoreCheckoutForm) {
-        _state.update { it.copy(form = it.form.block(), fieldErrors = emptyMap(), message = null) }
-        quote()
+        val previous = _state.value.form
+        val next = previous.block().cleanAfter(previous)
+        if (next == previous) return
+        _state.update { it.copy(form = next, quote = null, fieldErrors = emptyMap(), message = null) }
+        if (next.isReadyForQuote()) {
+            scheduleQuote(immediate = false)
+        } else {
+            quoteJob?.cancel()
+            lastQuoteSignature = null
+            _state.update { it.copy(loadingQuote = false) }
+        }
     }
 
     fun quote() {
+        scheduleQuote(immediate = true, force = true)
+    }
+
+    private fun scheduleQuote(immediate: Boolean, force: Boolean = false) {
         val current = _state.value
         if (current.lines.isEmpty()) return
         val request = current.form.toRequest(current.lines)
+        if (! request.isReadyForQuote()) return
+        val signature = request.signature()
+        if (!force && signature == lastQuoteSignature && (current.loadingQuote || current.quote != null)) return
+        quoteJob?.cancel()
+        quoteJob = viewModelScope.launch {
+            if (!immediate) delay(450)
+            executeQuote(request, signature)
+        }
+    }
+
+    private suspend fun executeQuote(request: StoreQuoteRequestData, signature: String) {
         val version = ++quoteVersion
-        viewModelScope.launch {
-            _state.update { it.copy(loadingQuote = true, message = null) }
-            when (val result = store.quote(request)) {
-                is StoreResult.Success -> if (version == quoteVersion) _state.update { it.copy(loadingQuote = false, quote = result.value) }
-                is StoreResult.ValidationError -> _state.update {
-                    if (version == quoteVersion) {
-                        it.copy(
-                            loadingQuote = false,
-                            quote = null,
-                            fieldErrors = result.errors.mapValues { entry -> entry.value.firstOrNull().orEmpty() },
-                            message = UiMessage.Validation
-                        )
-                    } else {
-                        it
-                    }
+        lastQuoteSignature = signature
+        _state.update { it.copy(loadingQuote = true, message = null) }
+        when (val result = store.quote(request)) {
+            is StoreResult.Success -> if (version == quoteVersion) {
+                _state.update { it.copy(loadingQuote = false, quote = result.value, message = null) }
+            }
+            is StoreResult.ValidationError -> _state.update {
+                if (version == quoteVersion) {
+                    it.copy(
+                        loadingQuote = false,
+                        quote = null,
+                        fieldErrors = result.errors.mapValues { entry -> entry.value.firstOrNull().orEmpty() },
+                        message = UiMessage.Validation
+                    )
+                } else {
+                    it
                 }
-                else -> if (version == quoteVersion) {
-                    _state.update { it.copy(loadingQuote = false, quote = null, message = result.toUiMessage(), loggedOut = result is StoreResult.Unauthorized) }
-                }
+            }
+            else -> if (version == quoteVersion) {
+                _state.update { it.copy(loadingQuote = false, quote = null, message = result.toUiMessage(), loggedOut = result is StoreResult.Unauthorized) }
             }
         }
     }
@@ -271,8 +337,8 @@ class StoreCheckoutViewModel(
     fun submit() {
         val current = _state.value
         if (current.submitting || current.lines.isEmpty() || current.quote == null || current.loadingQuote) return
+        _state.update { it.copy(submitting = true, message = null, fieldErrors = emptyMap()) }
         viewModelScope.launch {
-            _state.update { it.copy(submitting = true, message = null, fieldErrors = emptyMap()) }
             val request = current.form.toRequest(current.lines)
             val key = pendingOrderStore.keyFor(request.signature())
             when (val result = store.createOrder(key, request)) {
@@ -380,8 +446,8 @@ class StoreReceiptViewModel(private val store: StoreGateway) : ViewModel() {
             return
         }
         if (_state.value.submitting) return
+        _state.update { it.copy(submitting = true, message = null, fieldError = null) }
         viewModelScope.launch {
-            _state.update { it.copy(submitting = true, message = null, fieldError = null) }
             when (val result = store.submitReceipt(orderCode, UUID.randomUUID().toString(), receipt)) {
                 is StoreResult.Success -> {
                     receipt.file.delete()
@@ -427,7 +493,45 @@ data class StoreCheckoutForm(
         deliveryAddress = HumanTextInputNormalizer.optionalForSubmit(deliveryAddress),
         couponCode = HumanTextInputNormalizer.optionalForSubmit(couponCode, TextInputNormalization.Coupon)
     )
+
+    fun selectedDepartment(destinations: List<StoreDeliveryDestination>): StoreDeliveryDestination? =
+        destinations.firstOrNull { it.department == department }
+
+    fun selectedCity(destinations: List<StoreDeliveryDestination>): StoreDeliveryCity? =
+        selectedDepartment(destinations)?.cities?.firstOrNull { it.city == city }
+
+    fun hasConfiguredCities(destinations: List<StoreDeliveryDestination>): Boolean =
+        selectedDepartment(destinations)?.cities?.isNotEmpty() == true
+
+    fun hasConfiguredZones(destinations: List<StoreDeliveryDestination>): Boolean =
+        selectedCity(destinations)?.zones?.isNotEmpty() == true
+
+    fun cleanAfter(previous: StoreCheckoutForm): StoreCheckoutForm {
+        var next = this
+        if (next.deliveryMethod != previous.deliveryMethod && next.deliveryMethod == "pickup") {
+            next = next.copy(department = "", city = "", zone = "", deliveryAddress = "")
+        }
+        if (next.department != previous.department) {
+            next = next.copy(city = "", zone = "")
+        }
+        if (next.city != previous.city) {
+            next = next.copy(zone = "")
+        }
+
+        return next
+    }
+
+    fun isReadyForQuote(): Boolean = toRequest(emptyList()).isReadyForQuote()
 }
+
+private fun StoreQuoteRequestData.isReadyForQuote(): Boolean =
+    deliveryMethod == "pickup" ||
+        (
+            deliveryMethod == "shipping" &&
+                !department.isNullOrBlank() &&
+                !city.isNullOrBlank() &&
+                !deliveryAddress.isNullOrBlank()
+        )
 
 private fun StoreQuoteRequestData.signature(): String = storePayloadSignature(
     buildString {
@@ -449,6 +553,7 @@ data class StoreCheckoutUiState(
     val lines: List<StoreCartLine> = emptyList(),
     val form: StoreCheckoutForm = StoreCheckoutForm(),
     val settings: StoreSettings? = null,
+    val deliveryDestinations: List<StoreDeliveryDestination> = emptyList(),
     val quote: StoreQuote? = null,
     val loadingQuote: Boolean = false,
     val submitting: Boolean = false,

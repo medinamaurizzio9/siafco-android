@@ -91,7 +91,10 @@ object StoreCartLogic {
         val normalized = line.copy(quantity = line.quantity.coerceIn(1, MAX_QUANTITY))
         val merged = current.map {
             if (it.productPublicCode == normalized.productPublicCode && it.variantPublicCode == normalized.variantPublicCode) {
-                it.copy(quantity = (it.quantity + normalized.quantity).coerceAtMost(MAX_QUANTITY))
+                it.copy(
+                    quantity = (it.quantity + normalized.quantity).coerceAtMost(MAX_QUANTITY),
+                    imageUrl = it.imageUrl ?: normalized.imageUrl
+                )
             } else {
                 it
             }
@@ -122,9 +125,10 @@ object StoreCartLogic {
 private data class CartLineEntity(
     val productPublicCode: String,
     val variantPublicCode: String? = null,
-    val quantity: Int
+    val quantity: Int,
+    val imageUrl: String? = null
 ) {
-    fun toDomain(): StoreCartLine = StoreCartLine(productPublicCode, variantPublicCode, quantity)
+    fun toDomain(): StoreCartLine = StoreCartLine(productPublicCode, variantPublicCode, quantity, imageUrl)
 }
 
-private fun StoreCartLine.toEntity(): CartLineEntity = CartLineEntity(productPublicCode, variantPublicCode, quantity)
+private fun StoreCartLine.toEntity(): CartLineEntity = CartLineEntity(productPublicCode, variantPublicCode, quantity, imageUrl)

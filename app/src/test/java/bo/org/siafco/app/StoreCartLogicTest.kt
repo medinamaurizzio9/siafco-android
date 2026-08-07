@@ -53,4 +53,42 @@ class StoreCartLogicTest {
         assertTrue(!raw.contains("total", ignoreCase = true))
         assertEquals(listOf(StoreCartLine("PROD-1", "VAR-1", 2)), StoreCartSerializer.decode(raw))
     }
+
+    @Test
+    fun serializedCartPreservesNullableProductImageWithoutPrices() {
+        val line = StoreCartLine(
+            productPublicCode = "PROD-1",
+            variantPublicCode = null,
+            quantity = 1,
+            imageUrl = "http://10.0.2.2:8000/storage/store/products/joya.jpg"
+        )
+
+        val raw = StoreCartSerializer.encode(listOf(line))
+        val decoded = StoreCartSerializer.decode(raw)
+
+        assertEquals(listOf(line), decoded)
+        assertTrue(raw.contains("imageUrl"))
+        assertTrue(!raw.contains("price", ignoreCase = true))
+        assertTrue(!raw.contains("coupon", ignoreCase = true))
+        assertTrue(!raw.contains("address", ignoreCase = true))
+        assertTrue(!raw.contains("total", ignoreCase = true))
+    }
+
+    @Test
+    fun legacyCartWithoutImageUrlStillDecodes() {
+        val raw = """[{"productPublicCode":"PROD-1","variantPublicCode":"VAR-1","quantity":2}]"""
+
+        assertEquals(listOf(StoreCartLine("PROD-1", "VAR-1", 2)), StoreCartSerializer.decode(raw))
+    }
+
+    @Test
+    fun addBackfillsImageUrlForExistingLegacyLine() {
+        val legacy = StoreCartLine("PROD-1", null, 1)
+        val withImage = StoreCartLine("PROD-1", null, 1, "http://10.0.2.2:8000/storage/store/products/joya.jpg")
+
+        val result = StoreCartLogic.add(listOf(legacy), withImage)
+
+        assertEquals(2, result.first().quantity)
+        assertEquals(withImage.imageUrl, result.first().imageUrl)
+    }
 }

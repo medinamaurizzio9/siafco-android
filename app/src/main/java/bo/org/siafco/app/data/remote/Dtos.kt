@@ -286,6 +286,21 @@ data class StoreOrdersPayload(
 data class StoreWhatsappPayload(val whatsapp: StoreWhatsappDto)
 
 @Serializable
+data class StoreDeliveryDestinationDto(
+    val department: String,
+    val cities: List<StoreDeliveryCityDto> = emptyList()
+)
+
+@Serializable
+data class StoreDeliveryCityDto(
+    val city: String,
+    val zones: List<StoreDeliveryZoneDto> = emptyList()
+)
+
+@Serializable
+data class StoreDeliveryZoneDto(val zone: String)
+
+@Serializable
 data class StoreSettingsDto(
     val currency: String = "BOB",
     @SerialName("pickup_enabled") val pickupEnabled: Boolean = false,
@@ -468,7 +483,8 @@ data class StoreOrderItemDto(
     @SerialName("unit_price") val unitPrice: String,
     val quantity: Int,
     @SerialName("discount_total") val discountTotal: String? = null,
-    @SerialName("line_total") val lineTotal: String
+    @SerialName("line_total") val lineTotal: String,
+    @SerialName("primary_image_url") val primaryImageUrl: String? = null
 )
 
 @Serializable

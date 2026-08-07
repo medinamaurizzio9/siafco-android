@@ -118,7 +118,10 @@ class StoreRepositoryTest {
         assertEquals("/api/mobile/v1/store/orders", ordersRequest.url.encodedPath)
         assertNull(ordersRequest.url.queryParameter("attention_only"))
 
-        assertTrue(repository.order("PED-1") is StoreResult.Success)
+        val detail = repository.order("PED-1")
+        assertTrue(detail is StoreResult.Success)
+        val item = (detail as StoreResult.Success).value.items.single()
+        assertEquals("http://10.0.2.2:8000/storage/store/products/polera.jpg?v=1", item.primaryImageUrl)
         val whatsapp = repository.whatsapp("PED-1")
 
         assertTrue(whatsapp is StoreResult.Success)
@@ -137,6 +140,22 @@ class StoreRepositoryTest {
         assertEquals("true", request.url.queryParameter("attention_only"))
         assertEquals("3", request.url.queryParameter("per_page"))
         assertNull(request.url.queryParameter("status"))
+    }
+
+    @Test
+    fun deliveryDestinationsDeserializeLaravelContractWithoutPrices() = runTest {
+        server.enqueue(jsonResponse(DELIVERY_DESTINATIONS_JSON))
+
+        val result = repository.deliveryDestinations()
+
+        assertTrue(result is StoreResult.Success)
+        val destinations = (result as StoreResult.Success).value
+        assertEquals(1, destinations.size)
+        assertEquals("LA PAZ", destinations.single().department)
+        assertEquals(listOf("EL ALTO", "LA PAZ"), destinations.single().cities.map { it.city })
+        assertEquals("SOPOCACHI", destinations.single().cities[1].zones.single().zone)
+        val request = server.takeRequest()
+        assertEquals("/api/mobile/v1/store/delivery-destinations", request.url.encodedPath)
     }
 
     @Test
@@ -242,7 +261,7 @@ class StoreRepositoryTest {
               "total":"209.80","currency":"BOB","delivery_method":"pickup","item_summary":"1 producto",
               "capabilities":{"can_upload_receipt":true,"can_open_whatsapp":true,"can_cancel":false,"can_view_receipt":false},
               "delivery":{"method":"pickup","department":null,"city":null,"zone":null,"address":null},
-              "items":[{"sku":"SKU-1","name":"Polera SIAFCO","variant":"M","unit_price":"99.90","quantity":1,"discount_total":"0.00","line_total":"99.90"}],
+              "items":[{"sku":"SKU-1","name":"Polera SIAFCO","variant":"M","unit_price":"99.90","quantity":1,"discount_total":"0.00","line_total":"99.90","primary_image_url":"http://127.0.0.1:8000/storage/store/products/polera.jpg?v=1"}],
               "subtotal":"99.90","discount_total":"0.00","shipping_total":"0.00","payment":{"status":"pending","message":"Pendiente"},
               "receipts":[],"status_history":[{"from_status":null,"to_status":"pending_payment","changed_at":"2026-08-02T12:00:00Z"}]
             }}}
@@ -258,6 +277,15 @@ class StoreRepositoryTest {
 
         private const val WHATSAPP_JSON = """
             {"success":true,"message":"OK","data":{"whatsapp":{"url":"https://wa.me/59170000000?text=Pedido","opened_at":"2026-08-02T12:00:00Z","message_preview":"Pedido"}}}
+        """
+
+        private const val DELIVERY_DESTINATIONS_JSON = """
+            {"success":true,"message":"OK","data":[
+              {"department":"LA PAZ","cities":[
+                {"city":"EL ALTO","zones":[]},
+                {"city":"LA PAZ","zones":[{"zone":"SOPOCACHI"}]}
+              ]}
+            ]}
         """
     }
 }

@@ -148,6 +148,7 @@ class StoreProductViewModelTest {
     private class FakeStoreGateway(private val product: StoreProduct) : StoreGateway {
         override suspend fun catalog(filters: StoreCatalogFilters): StoreResult<StoreCatalog> = error("Not used")
         override suspend fun product(publicCode: String): StoreResult<StoreProduct> = StoreResult.Success(product)
+        override suspend fun deliveryDestinations(): StoreResult<List<bo.org.siafco.app.domain.StoreDeliveryDestination>> = StoreResult.Success(emptyList())
         override suspend fun quote(request: StoreQuoteRequestData): StoreResult<StoreQuote> = error("Not used")
         override suspend fun createOrder(idempotencyKey: String, request: StoreQuoteRequestData): StoreResult<StoreOrder> = error("Not used")
         override suspend fun orders(filters: StoreOrderFilters): StoreResult<StoreOrderList> = error("Not used")

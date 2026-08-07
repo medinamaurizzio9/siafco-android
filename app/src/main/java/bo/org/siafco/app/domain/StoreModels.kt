@@ -26,6 +26,18 @@ data class StorePaymentSettings(
     val instructions: String?
 )
 
+data class StoreDeliveryDestination(
+    val department: String,
+    val cities: List<StoreDeliveryCity>
+)
+
+data class StoreDeliveryCity(
+    val city: String,
+    val zones: List<StoreDeliveryZone>
+)
+
+data class StoreDeliveryZone(val zone: String)
+
 data class StoreCategory(val slug: String, val name: String)
 
 data class StoreProduct(
@@ -85,7 +97,8 @@ data class StorePagination(
 data class StoreCartLine(
     val productPublicCode: String,
     val variantPublicCode: String? = null,
-    val quantity: Int = 1
+    val quantity: Int = 1,
+    val imageUrl: String? = null
 ) {
     val key: String get() = listOf(productPublicCode, variantPublicCode.orEmpty()).joinToString(":")
 }
@@ -180,7 +193,8 @@ data class StoreOrderItem(
     val unitPrice: String,
     val quantity: Int,
     val discountTotal: String?,
-    val lineTotal: String
+    val lineTotal: String,
+    val primaryImageUrl: String? = null
 )
 
 data class StoreOrderPayment(val status: String?, val message: String?)
