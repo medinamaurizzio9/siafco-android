@@ -390,6 +390,7 @@ class HomeViewModelTest {
 
         override suspend fun catalog(filters: StoreCatalogFilters): StoreResult<StoreCatalog> = error("No se usa en estas pruebas.")
         override suspend fun product(publicCode: String): StoreResult<StoreProduct> = error("No se usa en estas pruebas.")
+        override suspend fun deliveryDestinations(): StoreResult<List<bo.org.siafco.app.domain.StoreDeliveryDestination>> = StoreResult.Success(emptyList())
         override suspend fun quote(request: StoreQuoteRequestData): StoreResult<StoreQuote> = error("No se usa en estas pruebas.")
         override suspend fun createOrder(idempotencyKey: String, request: StoreQuoteRequestData): StoreResult<StoreOrder> = error("No se usa en estas pruebas.")
         override suspend fun orders(filters: StoreOrderFilters): StoreResult<StoreOrderList> {

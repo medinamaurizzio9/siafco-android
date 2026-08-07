@@ -349,10 +349,11 @@ fun CooperativeBottomBar(
     selected: CooperativeDestination,
     canOpenStore: Boolean,
     canOpenCredential: Boolean,
-    onSelect: (CooperativeDestination) -> Unit
+    onSelect: (CooperativeDestination) -> Unit,
+    dark: Boolean = false
 ) {
     NavigationBar(
-        containerColor = CooperativeSurface,
+        containerColor = if (dark) FigmaNavyDeep else CooperativeSurface,
         tonalElevation = 8.dp
     ) {
         CooperativeDestination.entries.forEach { destination ->
@@ -385,11 +386,11 @@ fun CooperativeBottomBar(
                 },
                 label = { Text(destination.label, maxLines = 1) },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = CooperativeNavy,
-                    selectedTextColor = CooperativeNavy,
+                    selectedIconColor = if (dark) FigmaGold else CooperativeNavy,
+                    selectedTextColor = if (dark) FigmaGold else CooperativeNavy,
                     indicatorColor = Color.Transparent,
-                    unselectedIconColor = CooperativeTextSecondary,
-                    unselectedTextColor = CooperativeTextSecondary,
+                    unselectedIconColor = if (dark) Color(0xFFAAB7C8) else CooperativeTextSecondary,
+                    unselectedTextColor = if (dark) Color(0xFFAAB7C8) else CooperativeTextSecondary,
                     disabledIconColor = CooperativeTextSecondary.copy(alpha = 0.36f),
                     disabledTextColor = CooperativeTextSecondary.copy(alpha = 0.36f)
                 )

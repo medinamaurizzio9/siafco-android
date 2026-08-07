@@ -277,7 +277,18 @@ fun SiafcoAppRoot(container: AppContainer, navController: NavHostController = re
                 orderCode = route.orderCode,
                 onBack = { navController.popBackStack() },
                 onLoggedOut = { navController.toLoginFromHome() },
-                onSubmitted = { navController.popBackStack() }
+                onGoHome = {
+                    navController.navigate(Routes.Home) {
+                        popUpTo(Routes.StoreReceipt(route.orderCode)) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                },
+                onViewOrders = {
+                    navController.navigate(Routes.StoreOrders) {
+                        popUpTo(Routes.StoreReceipt(route.orderCode)) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
             )
         }
     }

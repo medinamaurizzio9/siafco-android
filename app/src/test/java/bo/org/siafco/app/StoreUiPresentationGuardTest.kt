@@ -24,10 +24,24 @@ class StoreUiPresentationGuardTest {
         val screens = projectFile("src/main/java/bo/org/siafco/app/feature/store/StoreScreens.kt").readText(Charsets.UTF_8)
         val viewModels = projectFile("src/main/java/bo/org/siafco/app/feature/store/StoreViewModels.kt").readText(Charsets.UTF_8)
 
-        assertTrue(screens.contains("QuoteSummary(it, compact = true)"))
+        assertTrue(screens.contains("QuoteSummary(it, compact = true, lines = state.lines)"))
+        assertTrue(screens.contains("QuoteSummary(it, lines = state.lines)"))
         assertTrue(screens.contains("stringResource(R.string.store_order_number, order.code)"))
         assertTrue(screens.contains("stringResource(R.string.store_receipt_order, orderCode)"))
         assertTrue(viewModels.contains("val canCreateOrder: Boolean get() = lines.isNotEmpty() && quote != null"))
+    }
+
+    @Test
+    fun storeCriticalSubmitsShowBlockingProcessingOverlay() {
+        val screens = projectFile("src/main/java/bo/org/siafco/app/feature/store/StoreScreens.kt").readText(Charsets.UTF_8)
+        val strings = projectFile("src/main/res/values/strings.xml").readText(Charsets.UTF_8)
+
+        assertTrue(screens.contains("BackHandler(enabled = state.submitting)"))
+        assertTrue(screens.contains("StoreProcessingOverlay("))
+        assertTrue(screens.contains("store_processing_order_message"))
+        assertTrue(screens.contains("store_processing_receipt_message"))
+        assertTrue(strings.contains("Estamos creando tu pedido"))
+        assertTrue(strings.contains("Estamos enviando tu comprobante"))
     }
 
     @Test

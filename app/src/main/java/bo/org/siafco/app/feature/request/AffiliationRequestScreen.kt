@@ -69,6 +69,7 @@ fun AffiliationRequestScreen(
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val qrDownloadStartedMessage = stringResource(R.string.payment_qr_download_started, PaymentQrDownloader.FILE_NAME)
     LaunchedEffect(Unit) { viewModel.load() }
 
     Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
@@ -95,10 +96,10 @@ fun AffiliationRequestScreen(
                         request = request,
                         onDownload = {
                             scope.launch {
-                                when (val result = PaymentQrDownloader.save(context, request.paymentQrUrl)) {
+                                when (PaymentQrDownloader.save(context, request.paymentQrUrl)) {
                                     is PaymentQrDownloadResult.Saved -> Toast.makeText(
                                         context,
-                                        context.getString(R.string.payment_qr_download_started, result.fileName),
+                                        qrDownloadStartedMessage,
                                         Toast.LENGTH_LONG
                                     ).show()
                                     PaymentQrDownloadResult.InvalidUrl -> Toast.makeText(
