@@ -2,7 +2,10 @@ package bo.org.siafco.app.feature.register
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,7 +14,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -25,12 +31,14 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -42,15 +50,29 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import bo.org.siafco.app.R
+import bo.org.siafco.app.core.text.HumanTextInputNormalizer
 import bo.org.siafco.app.core.text.TextInputNormalization
-import bo.org.siafco.app.core.ui.NormalizedTextField
+import bo.org.siafco.app.core.ui.FigmaGold
+import bo.org.siafco.app.core.ui.FigmaMuted
+import bo.org.siafco.app.core.ui.FigmaNavy
+import bo.org.siafco.app.core.ui.FigmaNavyDeep
+import bo.org.siafco.app.core.ui.FigmaPrimaryButton
+import bo.org.siafco.app.core.ui.FigmaSecondaryButton
 import bo.org.siafco.app.domain.CatalogOption
 import bo.org.siafco.app.domain.CatalogPlan
 import bo.org.siafco.app.domain.CatalogSector
@@ -87,68 +109,71 @@ fun RegisterAffiliationScreen(
         onDispose { viewModel.clearSensitiveData() }
     }
 
-    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+    Surface(modifier = Modifier.fillMaxSize(), color = Color.White) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .imePadding()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .imePadding(),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            Text(
-                text = stringResource(R.string.register_title),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            LinearProgressIndicator(
-                progress = { (state.step + 1) / 5f },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Text(
-                text = stringResource(R.string.register_step_indicator, state.step + 1, 5, stepTitle(state.step)),
-                style = MaterialTheme.typography.titleMedium
-            )
-            state.message?.let {
-                Text(text = it, color = MaterialTheme.colorScheme.error)
-            }
-            if (state.loadingCatalogs) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-            } else {
-                Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        when (state.step) {
-                            0 -> IdentityStep(state, viewModel)
-                            1 -> ContactStep(state, viewModel)
-                            2 -> InstitutionalStep(state, viewModel)
-                            3 -> PhotoStep(state, onPickPhoto = { photoFlowVisible = true })
-                            4 -> ConfirmationStep(state, viewModel)
+            RegisterHeader(onBack = { requestBack() })
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(bottom = 34.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                RegisterStepIndicator(currentStep = state.step)
+                Text(
+                    text = "Paso ${state.step + 1}: ${stepTitle(state.step)}",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Black,
+                    color = FigmaNavyDeep
+                )
+                state.message?.let {
+                    Text(text = it, color = MaterialTheme.colorScheme.error)
+                }
+                if (state.loadingCatalogs) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                } else {
+                    Card(
+                        shape = RoundedCornerShape(26.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            when (state.step) {
+                                0 -> IdentityStep(state, viewModel)
+                                1 -> ContactStep(state, viewModel)
+                                2 -> InstitutionalStep(state, viewModel)
+                                3 -> PhotoStepFigma(state, onPickPhoto = { photoFlowVisible = true })
+                                4 -> ConfirmationStepFigma(state, viewModel)
+                            }
                         }
                     }
                 }
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                OutlinedButton(
-                    onClick = {
-                        requestBack()
-                    },
-                    enabled = !state.submitting,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(stringResource(if (state.step == 0) R.string.register_back_login else R.string.register_back))
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                    if (state.step > 0) {
+                        FigmaSecondaryButton(
+                            text = stringResource(R.string.register_back),
+                            onClick = { requestBack() },
+                            enabled = !state.submitting,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    FigmaPrimaryButton(
+                        text = stringResource(if (state.step == 4) R.string.register_submit else R.string.register_next),
+                        onClick = { if (state.step == 4) viewModel.submit() else viewModel.nextStep() },
+                        enabled = state.canContinue,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
-                Button(
-                    onClick = { if (state.step == 4) viewModel.submit() else viewModel.nextStep() },
-                    enabled = state.canContinue,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(stringResource(if (state.step == 4) R.string.register_submit else R.string.register_next))
-                }
-            }
-            if (state.accountExists) {
-                TextButton(onClick = onBackToLogin, modifier = Modifier.fillMaxWidth()) {
-                    Text(stringResource(R.string.register_go_login))
+                if (state.accountExists) {
+                    TextButton(onClick = onBackToLogin, modifier = Modifier.fillMaxWidth()) {
+                        Text(stringResource(R.string.register_go_login))
+                    }
                 }
             }
         }
@@ -179,6 +204,103 @@ fun RegisterAffiliationScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun RegisterHeader(onBack: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(FigmaNavyDeep, RoundedCornerShape(bottomStart = 38.dp, bottomEnd = 38.dp))
+            .padding(horizontal = 24.dp, vertical = 38.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Card(
+                onClick = onBack,
+                shape = CircleShape,
+                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.12f)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Box(modifier = Modifier.size(56.dp), contentAlignment = Alignment.Center) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_arrow_back),
+                        contentDescription = stringResource(R.string.register_back),
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            }
+            Text(
+                text = "Nueva Afiliación",
+                modifier = Modifier.weight(1f),
+                color = Color.White,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Black,
+                textAlign = TextAlign.Center
+            )
+            Box(modifier = Modifier.size(56.dp))
+        }
+    }
+}
+
+@Composable
+private fun RegisterStepIndicator(currentStep: Int) {
+    val labels = listOf("Personal", "Contacto", "Laboral", "Foto", "Confirmar")
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+        labels.forEachIndexed { index, label ->
+            val completed = index < currentStep
+            val selected = index == currentStep
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (index > 0) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(3.dp)
+                                .background(if (completed || selected) FigmaGold else FigmaMuted.copy(alpha = 0.55f))
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .background(if (selected || completed) FigmaGold else Color.White, CircleShape)
+                            .border(2.dp, if (selected || completed) FigmaGold else FigmaMuted, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = (index + 1).toString(),
+                            color = if (selected || completed) FigmaNavyDeep else FigmaMuted,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
+                    if (index < labels.lastIndex) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(3.dp)
+                                .background(if (completed) FigmaGold else FigmaMuted.copy(alpha = 0.55f))
+                        )
+                    }
+                }
+                Text(
+                    text = label,
+                    color = if (selected) FigmaGold else FigmaMuted,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = if (selected) FontWeight.Black else FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1
+                )
+            }
+        }
     }
 }
 
@@ -282,6 +404,72 @@ private fun InstitutionalStep(state: RegisterAffiliationUiState, viewModel: Regi
 }
 
 @Composable
+private fun PhotoStepFigma(state: RegisterAffiliationUiState, onPickPhoto: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF7F9FC)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            val photo = state.form.photo
+            if (photo == null) {
+                Box(
+                    modifier = Modifier
+                        .size(132.dp)
+                        .background(FigmaGold.copy(alpha = 0.16f), CircleShape)
+                        .border(2.dp, FigmaGold, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_profile_camera),
+                        contentDescription = null,
+                        tint = FigmaNavy,
+                        modifier = Modifier.size(44.dp)
+                    )
+                }
+                Text(
+                    text = "Fotografía del afiliado",
+                    color = FigmaNavyDeep,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Black
+                )
+            } else {
+                Image(
+                    painter = rememberAsyncImagePainter(photo.file),
+                    contentDescription = stringResource(R.string.register_photo_preview),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(230.dp)
+                        .clip(RoundedCornerShape(22.dp)),
+                    contentScale = ContentScale.Crop
+                )
+                Text(text = photo.displayName, fontWeight = FontWeight.Bold, color = FigmaNavyDeep)
+                Text(text = "Resolución: ${photo.width} × ${photo.height} px", style = MaterialTheme.typography.bodySmall)
+                Text(text = "Tamaño optimizado: ${formatPhotoSize(photo.sizeBytes)}", style = MaterialTheme.typography.bodySmall)
+                Text(text = "Esta fotografía se utilizará en tu perfil y credencial.", style = MaterialTheme.typography.bodySmall)
+            }
+            state.fieldErrors["photo"]?.let { Text(text = it, color = MaterialTheme.colorScheme.error) }
+            FigmaSecondaryButton(
+                text = stringResource(R.string.register_pick_photo),
+                onClick = onPickPhoto,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text(
+                text = stringResource(R.string.register_photo_help),
+                style = MaterialTheme.typography.bodySmall,
+                color = FigmaMuted,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
+}
+
+@Composable
 private fun PhotoStep(state: RegisterAffiliationUiState, onPickPhoto: () -> Unit) {
     state.form.photo?.let {
         Image(
@@ -306,6 +494,63 @@ private fun PhotoStep(state: RegisterAffiliationUiState, onPickPhoto: () -> Unit
 private fun formatPhotoSize(sizeBytes: Long): String {
     val kb = sizeBytes / 1024.0
     return if (kb < 1024) "%.0f KB".format(kb) else "%.1f MB".format(kb / 1024.0)
+}
+
+@Composable
+private fun ConfirmationStepFigma(state: RegisterAffiliationUiState, viewModel: RegisterAffiliationViewModel) {
+    val form = state.form
+    val plan = viewModel.selectedPlan()
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF7F9FC)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("Revisa tu solicitud", color = FigmaNavyDeep, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
+            SummaryLine("Nombre completo", form.fullName)
+            SummaryLine("Correo electrónico", form.email)
+            SummaryLine("Teléfono", form.phone)
+            SummaryLine("Dirección", form.address)
+            SummaryLine("Regional", form.regional)
+            SummaryLine("Institución", form.institution)
+            SummaryLine("Cargo", form.position)
+            PlanSummary(plan)
+        }
+    }
+    Text(text = stringResource(R.string.register_terms_version, state.catalogs?.institution?.termsVersion.orEmpty()))
+    Text(text = stringResource(R.string.register_privacy_version, state.catalogs?.institution?.privacyVersion.orEmpty()))
+    Text(
+        text = stringResource(R.string.register_legal_text_pending),
+        style = MaterialTheme.typography.bodySmall,
+        color = FigmaMuted
+    )
+    CheckRow(
+        checked = form.termsAccepted,
+        label = stringResource(R.string.register_accept_terms),
+        error = state.fieldErrors["terms_accepted"],
+        onChecked = { viewModel.updateForm { current -> current.copy(termsAccepted = it) } }
+    )
+    CheckRow(
+        checked = form.privacyAccepted,
+        label = stringResource(R.string.register_accept_privacy),
+        error = state.fieldErrors["privacy_accepted"],
+        onChecked = { viewModel.updateForm { current -> current.copy(privacyAccepted = it) } }
+    )
+    if (state.submitting) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+            CircularProgressIndicator()
+        }
+    }
+}
+
+@Composable
+private fun SummaryLine(label: String, value: String) {
+    if (value.isBlank()) return
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
+        Text(label, color = FigmaMuted, modifier = Modifier.weight(0.42f))
+        Text(value, color = FigmaNavyDeep, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, modifier = Modifier.weight(0.58f))
+    }
 }
 
 @Composable
@@ -360,16 +605,33 @@ private fun Field(
     humanText: Boolean = false,
     onChange: (String) -> Unit
 ) {
-    NormalizedTextField(
-        value = value,
-        onValueChange = onChange,
+    val normalization = if (humanText) TextInputNormalization.Human else TextInputNormalization.None
+    var fieldValue by remember { mutableStateOf(TextFieldValue(value, TextRange(value.length))) }
+    LaunchedEffect(value) {
+        if (value != fieldValue.text) {
+            fieldValue = fieldValue.copy(text = value, selection = TextRange(value.length), composition = null)
+        }
+    }
+    OutlinedTextField(
+        value = fieldValue,
+        onValueChange = { incoming ->
+            val normalized = HumanTextInputNormalizer.visual(incoming, normalization)
+            fieldValue = normalized
+            if (normalized.text != value) onChange(normalized.text)
+        },
         modifier = Modifier.fillMaxWidth(),
         label = { Text(stringResource(labelRes)) },
         isError = error != null,
         supportingText = { error?.let { Text(it) } },
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        keyboardOptions = when (normalization) {
+            TextInputNormalization.Human,
+            TextInputNormalization.Coupon -> KeyboardOptions(keyboardType = keyboardType, capitalization = KeyboardCapitalization.Characters)
+            TextInputNormalization.None -> KeyboardOptions(keyboardType = keyboardType)
+        },
         singleLine = labelRes != R.string.register_address,
-        normalization = if (humanText) TextInputNormalization.Human else TextInputNormalization.None
+        leadingIcon = { FieldIcon(labelRes) },
+        shape = RoundedCornerShape(22.dp),
+        colors = registerTextFieldColors()
     )
 }
 
@@ -391,14 +653,54 @@ private fun PasswordField(
         supportingText = { error?.let { Text(it) } },
         visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        leadingIcon = {
+            Icon(painter = painterResource(R.drawable.ic_lock), contentDescription = null, tint = FigmaNavy)
+        },
         trailingIcon = {
-            TextButton(onClick = onToggle) {
-                Text(stringResource(if (visible) R.string.login_hide_password else R.string.login_show_password))
+            IconButton(onClick = onToggle) {
+                Icon(
+                    painter = painterResource(if (visible) R.drawable.ic_visibility_off else R.drawable.ic_visibility),
+                    contentDescription = stringResource(if (visible) R.string.login_hide_password else R.string.login_show_password),
+                    tint = FigmaNavy
+                )
             }
         },
-        singleLine = true
+        singleLine = true,
+        shape = RoundedCornerShape(22.dp),
+        colors = registerTextFieldColors()
     )
 }
+
+@Composable
+private fun FieldIcon(labelRes: Int) {
+    val icon = when (labelRes) {
+        R.string.register_full_name -> R.drawable.ic_nav_profile
+        R.string.register_ci,
+        R.string.register_ci_complement -> R.drawable.ic_profile_shield
+        R.string.register_birth_date -> R.drawable.ic_profile_calendar
+        R.string.register_phone -> R.drawable.ic_profile_phone
+        R.string.login_email -> R.drawable.ic_mail
+        R.string.register_address -> R.drawable.ic_profile_location
+        R.string.register_institution -> R.drawable.ic_profile_shield
+        R.string.register_position -> R.drawable.ic_profile_edit
+        else -> R.drawable.ic_service_request
+    }
+    Icon(painter = painterResource(icon), contentDescription = null, tint = FigmaNavy)
+}
+
+@Composable
+private fun registerTextFieldColors() = TextFieldDefaults.colors(
+    focusedContainerColor = Color.White,
+    unfocusedContainerColor = Color.White,
+    disabledContainerColor = Color(0xFFE9EDF3),
+    errorContainerColor = Color.White,
+    focusedIndicatorColor = FigmaGold,
+    unfocusedIndicatorColor = FigmaGold,
+    errorIndicatorColor = MaterialTheme.colorScheme.error,
+    focusedLabelColor = FigmaMuted,
+    unfocusedLabelColor = FigmaMuted,
+    cursorColor = FigmaNavy
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -420,9 +722,14 @@ private fun <T> MenuField(
                 .fillMaxWidth(),
             readOnly = true,
             label = { Text(label) },
+            leadingIcon = {
+                Icon(painter = painterResource(menuIcon(label)), contentDescription = null, tint = FigmaNavy)
+            },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             isError = error != null,
-            supportingText = { error?.let { Text(it) } }
+            supportingText = { error?.let { Text(it) } },
+            shape = RoundedCornerShape(22.dp),
+            colors = registerTextFieldColors()
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { option ->
@@ -436,6 +743,15 @@ private fun <T> MenuField(
             }
         }
     }
+}
+
+private fun menuIcon(label: String): Int = when {
+    label.contains("expedido", ignoreCase = true) -> R.drawable.ic_profile_shield
+    label.contains("estado", ignoreCase = true) -> R.drawable.ic_profile_shield
+    label.contains("sector", ignoreCase = true) -> R.drawable.ic_nav_store
+    label.contains("plan", ignoreCase = true) -> R.drawable.ic_service_request
+    label.contains("regional", ignoreCase = true) -> R.drawable.ic_profile_location
+    else -> R.drawable.ic_service_request
 }
 
 @Composable
