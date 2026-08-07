@@ -49,7 +49,15 @@ class StoreUiPresentationGuardTest {
         assertTrue(home.contains("PendingOrdersSection"))
         assertTrue(home.contains("ServicesSection"))
         assertTrue(home.contains("No pudimos actualizar tus pedidos"))
-        assertTrue(home.indexOf("SectionHeader(title = \"Pendientes\")") > home.indexOf("if (orders.isNotEmpty())"))
+        assertTrue(home.indexOf("SectionHeader(title = \"Últimas actividades\"") > home.indexOf("if (orders.isNotEmpty())"))
+        assertTrue(home.contains("formatOrderDate"))
+        listOf("\"PER\"", "\"CRE\"", "\"AFI\"", "\"TIE\"", "\"PED\"").forEach { marker ->
+            assertFalse(home.contains(marker))
+        }
+        val components = projectFile("src/main/java/bo/org/siafco/app/core/ui/CooperativeComponents.kt").readText(Charsets.UTF_8)
+        listOf("\"IN\"", "\"TI\"", "\"PE\"", "\"CR\"", "\"PF\"").forEach { marker ->
+            assertFalse(components.contains(marker))
+        }
     }
 
     private fun projectFile(path: String): File =

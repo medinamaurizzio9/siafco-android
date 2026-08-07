@@ -1,5 +1,6 @@
 package bo.org.siafco.app.core.ui
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -51,12 +52,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import bo.org.siafco.app.R
 
-enum class CooperativeDestination(val label: String, val mark: String) {
-    Home("Inicio", "IN"),
-    Store("Tienda", "TI"),
-    Orders("Pedidos", "PE"),
-    Credential("Credencial", "CR"),
-    Profile("Perfil", "PF")
+enum class CooperativeDestination(val label: String, @param:DrawableRes val iconRes: Int) {
+    Home("Inicio", R.drawable.ic_nav_home),
+    Store("Tienda", R.drawable.ic_nav_store),
+    Orders("Pedidos", R.drawable.ic_nav_orders),
+    Credential("Credencial", R.drawable.ic_nav_credential),
+    Profile("Perfil", R.drawable.ic_nav_profile)
 }
 
 object CooperativeSpacing {
@@ -375,7 +376,11 @@ fun CooperativeBottomBar(
                             .padding(horizontal = 8.dp, vertical = 4.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(destination.mark, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Black)
+                        Icon(
+                            painter = painterResource(destination.iconRes),
+                            contentDescription = null,
+                            modifier = Modifier.size(22.dp)
+                        )
                     }
                 },
                 label = { Text(destination.label, maxLines = 1) },
