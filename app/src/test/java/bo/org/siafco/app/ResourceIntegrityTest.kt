@@ -1,4 +1,4 @@
-package bo.org.siafco.app
+﻿package bo.org.siafco.app
 
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -18,8 +18,8 @@ class ResourceIntegrityTest {
         ).forEach { marker ->
             assertFalse("strings.xml contains mojibake marker $marker", text.contains(marker))
         }
-        assertTrue(text.contains("COOPERATIVA TIERRA BENDITA"))
-        assertTrue(text.contains("App Afiliado"))
+        assertTrue(text.contains("Tierra Bendita"))
+        assertTrue(text.contains("Sistema Integral de Afiliaciones"))
         assertTrue(text.contains("Cotización"))
         assertTrue(text.contains("Cupón"))
         assertTrue(text.contains("Envío"))

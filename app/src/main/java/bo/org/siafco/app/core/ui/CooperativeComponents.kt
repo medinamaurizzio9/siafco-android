@@ -8,15 +8,23 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -24,6 +32,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -31,11 +40,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.Image
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import bo.org.siafco.app.R
 
 enum class CooperativeDestination(val label: String, val mark: String) {
     Home("Inicio", "IN"),
@@ -52,6 +66,253 @@ object CooperativeSpacing {
     val md = 16.dp
     val lg = 24.dp
     val xl = 32.dp
+}
+
+@Composable
+fun FigmaBrandRow(
+    modifier: Modifier = Modifier,
+    logoSize: androidx.compose.ui.unit.Dp = 74.dp,
+    title: String = "SIAFCO",
+    subtitle: String = "Fondo de Inversiones Tierra Bendita",
+    titleColor: Color = FigmaGold,
+    subtitleColor: Color = FigmaGold
+) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(18.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Image(
+            painter = painterResource(R.drawable.splash_logo),
+            contentDescription = stringResource(R.string.brand_logo_content_description),
+            modifier = Modifier.size(logoSize),
+            contentScale = ContentScale.Fit
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(title, style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Black, color = titleColor)
+            Text(subtitle, style = MaterialTheme.typography.titleSmall, color = subtitleColor)
+        }
+    }
+}
+
+@Composable
+fun FigmaHeaderPanel(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(238.dp)
+            .background(
+                brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                    colors = listOf(FigmaNavyDeep, FigmaNavy, Color(0xFF203B56))
+                ),
+                shape = RoundedCornerShape(bottomStart = 42.dp, bottomEnd = 42.dp)
+            )
+            .padding(horizontal = 28.dp, vertical = 38.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        content()
+    }
+}
+
+@Composable
+fun FigmaPrimaryButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier.height(64.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = FigmaGold, contentColor = FigmaNavy),
+        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp)
+    ) {
+        Text(text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
+    }
+}
+
+@Composable
+fun FigmaSecondaryButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    leadingIcon: @Composable (() -> Unit)? = null
+) {
+    OutlinedButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier.height(64.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = FigmaGold),
+        border = androidx.compose.foundation.BorderStroke(2.dp, FigmaGold),
+        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp)
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            leadingIcon?.invoke()
+            if (leadingIcon != null) {
+                Spacer(Modifier.width(10.dp))
+            }
+            Text(text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black)
+        }
+    }
+}
+
+@Composable
+fun FigmaTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    leadingIcon: @Composable (() -> Unit)? = null,
+    isError: Boolean = false,
+    supportingText: @Composable (() -> Unit)? = null,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
+    trailingIcon: @Composable (() -> Unit)? = null,
+    visualTransformation: VisualTransformation = VisualTransformation.None
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier.fillMaxWidth(),
+        label = { Text(label, fontWeight = FontWeight.SemiBold) },
+        singleLine = true,
+        isError = isError,
+        supportingText = supportingText,
+        keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
+        visualTransformation = visualTransformation,
+        leadingIcon = leadingIcon,
+        trailingIcon = trailingIcon,
+        shape = RoundedCornerShape(22.dp),
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = FigmaInputBackground,
+            unfocusedContainerColor = FigmaInputBackground,
+            disabledContainerColor = Color(0xFFE9EDF3),
+            errorContainerColor = FigmaInputBackground,
+            focusedIndicatorColor = FigmaGold,
+            unfocusedIndicatorColor = FigmaNavy,
+            errorIndicatorColor = CooperativeError,
+            focusedLabelColor = FigmaMuted,
+            unfocusedLabelColor = FigmaMuted,
+            cursorColor = FigmaNavy
+        )
+    )
+}
+
+@Composable
+fun FigmaPasswordField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    visible: Boolean,
+    onToggleVisible: () -> Unit,
+    modifier: Modifier = Modifier,
+    isError: Boolean = false,
+    supportingText: @Composable (() -> Unit)? = null,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
+) {
+    FigmaTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = label,
+        modifier = modifier,
+        leadingIcon = {
+            Icon(
+                painter = painterResource(R.drawable.ic_lock),
+                contentDescription = null,
+                tint = FigmaNavy
+            )
+        },
+        isError = isError,
+        supportingText = supportingText,
+        keyboardOptions = keyboardOptions,
+        visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
+        trailingIcon = {
+            IconButton(onClick = onToggleVisible) {
+                Icon(
+                    painter = painterResource(if (visible) R.drawable.ic_visibility_off else R.drawable.ic_visibility),
+                    contentDescription = if (visible) "Ocultar contraseña" else "Mostrar contraseña",
+                    tint = FigmaNavy
+                )
+            }
+        }
+    )
+}
+
+@Composable
+fun FigmaDisabledFeatureRow(
+    text: String,
+    modifier: Modifier = Modifier,
+    trailingText: String? = null
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(text, color = Color(0xFF20242B), style = MaterialTheme.typography.titleMedium)
+        trailingText?.let {
+            Text(it, color = FigmaGold, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+fun FigmaDisabledRememberRow(
+    text: String,
+    modifier: Modifier = Modifier,
+    trailingText: String? = null
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(52.dp)
+                    .height(30.dp)
+                    .background(FigmaGold.copy(alpha = 0.76f), RoundedCornerShape(999.dp))
+                    .padding(4.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(22.dp)
+                        .background(FigmaNavy, CircleShape)
+                )
+            }
+            Text(text, color = Color(0xFF20242B), style = MaterialTheme.typography.titleMedium)
+        }
+        trailingText?.let {
+            Text(it, color = FigmaGold, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+fun FigmaDividerOr(modifier: Modifier = Modifier) {
+    Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Box(modifier = Modifier.weight(1f).height(1.dp).background(Color(0xFFE5E9F0)))
+        Spacer(Modifier.width(18.dp))
+        Text("o", color = FigmaMuted, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.width(18.dp))
+        Box(modifier = Modifier.weight(1f).height(1.dp).background(Color(0xFFE5E9F0)))
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

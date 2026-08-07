@@ -31,13 +31,15 @@ class StoreUiPresentationGuardTest {
     }
 
     @Test
-    fun splashAndLoginUseOfficialBrandHeaderButHomeStaysCompact() {
-        listOf(
-            "src/main/java/bo/org/siafco/app/feature/splash/SplashScreen.kt",
-            "src/main/java/bo/org/siafco/app/feature/auth/LoginScreen.kt"
-        ).forEach { path ->
-            assertTrue("$path should use BrandHeader", projectFile(path).readText(Charsets.UTF_8).contains("BrandHeader("))
-        }
+    fun splashAndLoginUseFigmaBrandingButHomeStaysCompact() {
+        val splash = projectFile("src/main/java/bo/org/siafco/app/feature/splash/SplashScreen.kt").readText(Charsets.UTF_8)
+        val login = projectFile("src/main/java/bo/org/siafco/app/feature/auth/LoginScreen.kt").readText(Charsets.UTF_8)
+
+        assertTrue(splash.contains("R.drawable.splash_logo"))
+        assertTrue(splash.contains("FigmaGold"))
+        assertTrue(login.contains("FigmaBrandRow"))
+        assertTrue(login.contains("FigmaPasswordField"))
+
         val home = projectFile("src/main/java/bo/org/siafco/app/feature/home/HomeScreen.kt").readText(Charsets.UTF_8)
         assertFalse(home.contains("BrandHeader("))
         assertFalse(home.contains("AffiliationSummaryCard"))

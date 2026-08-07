@@ -18,6 +18,11 @@ val CooperativeTextSecondary = Color(0xFF667085)
 val CooperativeSuccess = Color(0xFF15803D)
 val CooperativeWarning = Color(0xFFB7791F)
 val CooperativeError = Color(0xFFB42318)
+val FigmaNavy = Color(0xFF071F3F)
+val FigmaNavyDeep = Color(0xFF041A36)
+val FigmaGold = Color(0xFFDDBA35)
+val FigmaInputBackground = Color(0xFFF7F9FC)
+val FigmaMuted = Color(0xFF8C98A8)
 
 private val LightColors = lightColorScheme(
     primary = CooperativeNavy,

@@ -40,6 +40,7 @@ import bo.org.siafco.app.feature.store.StoreProductScreen
 import bo.org.siafco.app.feature.store.StoreProductViewModel
 import bo.org.siafco.app.feature.store.StoreReceiptScreen
 import bo.org.siafco.app.feature.store.StoreReceiptViewModel
+import bo.org.siafco.app.feature.welcome.WelcomeScreen
 
 @Composable
 fun SiafcoAppRoot(container: AppContainer, navController: NavHostController = rememberNavController()) {
@@ -68,9 +69,19 @@ fun SiafcoAppRoot(container: AppContainer, navController: NavHostController = re
                     }
                 },
                 onLoginRequired = {
-                    navController.navigate(Routes.Login) {
+                    navController.navigate(Routes.Welcome) {
                         popUpTo<Routes.Splash> { inclusive = true }
                     }
+                }
+            )
+        }
+        composable<Routes.Welcome> {
+            WelcomeScreen(
+                onLogin = {
+                    navController.navigate(Routes.Login)
+                },
+                onRegister = {
+                    navController.navigate(Routes.RegisterAffiliation)
                 }
             )
         }
