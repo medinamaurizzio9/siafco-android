@@ -1,5 +1,6 @@
 package bo.org.siafco.app.feature.profile
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -11,8 +12,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,8 +48,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -69,15 +76,19 @@ import bo.org.siafco.app.core.ui.NormalizedTextField
 import bo.org.siafco.app.core.ui.PrimaryButton
 import bo.org.siafco.app.core.ui.SecondaryButton
 import bo.org.siafco.app.core.ui.SectionHeader
+import bo.org.siafco.app.core.ui.SiafcoTextFieldShape
 import bo.org.siafco.app.core.ui.StatusBadge
 import bo.org.siafco.app.core.ui.StatusTone
+import bo.org.siafco.app.core.ui.siafcoOutlinedTextFieldColors
 import bo.org.siafco.app.domain.MobileProfile
 import bo.org.siafco.app.feature.photo.PhotoInputFlow
 import coil3.compose.AsyncImage
 import coil3.compose.rememberAsyncImagePainter
+import kotlinx.coroutines.delay
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel,
@@ -90,10 +101,20 @@ fun ProfileScreen(
     var confirmPassword by remember { mutableStateOf(false) }
     var photoFlowVisible by remember { mutableStateOf(false) }
     var openAction by remember { mutableStateOf<ProfileAction?>(null) }
+    val scrollState = rememberScrollState()
+    val editRequester = remember { BringIntoViewRequester() }
+    val passwordRequester = remember { BringIntoViewRequester() }
+    val editFocusRequester = remember { FocusRequester() }
+    val passwordFocusRequester = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     fun leaveProfile() {
         viewModel.clearSensitiveData()
         onBack()
+    }
+
+    fun toggleAction(action: ProfileAction) {
+        openAction = if (openAction == action) null else action
     }
 
     BackHandler(enabled = !photoFlowVisible) {
@@ -104,12 +125,27 @@ fun ProfileScreen(
     LaunchedEffect(state.loggedOut) {
         if (state.loggedOut) onLoggedOut()
     }
+    LaunchedEffect(openAction) {
+        delay(140)
+        when (openAction) {
+            ProfileAction.Edit -> {
+                editRequester.bringIntoView()
+                editFocusRequester.requestFocus()
+            }
+            ProfileAction.Password -> {
+                passwordRequester.bringIntoView()
+                passwordFocusRequester.requestFocus()
+            }
+            null -> Unit
+        }
+    }
 
     if (confirmEmail) ConfirmDialog(
         text = stringResource(R.string.profile_confirm_email),
         onDismiss = { confirmEmail = false },
         onConfirm = {
             confirmEmail = false
+            keyboardController?.hide()
             viewModel.saveProfile()
         }
     )
@@ -118,6 +154,7 @@ fun ProfileScreen(
         onDismiss = { confirmPassword = false },
         onConfirm = {
             confirmPassword = false
+            keyboardController?.hide()
             viewModel.changePassword()
         }
     )
@@ -137,7 +174,8 @@ fun ProfileScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(scrollState)
+                    .imePadding()
                     .padding(bottom = 32.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
@@ -155,20 +193,42 @@ fun ProfileScreen(
                     Column(modifier = Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                         PersonalDataCard(profile)
                         ProfileActionsCard(
-                            onEditProfile = { openAction = ProfileAction.Edit },
-                            onChangePassword = { openAction = ProfileAction.Password }
+                            openAction = openAction,
+                            onEditProfile = { toggleAction(ProfileAction.Edit) },
+                            onChangePassword = { toggleAction(ProfileAction.Password) }
                         )
                         when (openAction) {
                             ProfileAction.Edit -> {
-                                EditableProfileCard(state = state, viewModel = viewModel)
+                                EditableProfileCard(
+                                    state = state,
+                                    viewModel = viewModel,
+                                    firstFieldFocusRequester = editFocusRequester,
+                                    modifier = Modifier
+                                        .bringIntoViewRequester(editRequester)
+                                        .border(2.dp, FigmaGold, RoundedCornerShape(20.dp))
+                                )
                                 PrimaryButton(
                                     text = if (state.savingProfile) "Guardando..." else stringResource(R.string.profile_save),
-                                    onClick = { if (state.form.email != profile.email) confirmEmail = true else viewModel.saveProfile() },
+                                    onClick = {
+                                        keyboardController?.hide()
+                                        if (state.form.email != profile.email) confirmEmail = true else viewModel.saveProfile()
+                                    },
                                     enabled = !state.savingProfile,
                                     modifier = Modifier.fillMaxWidth()
                                 )
                             }
-                            ProfileAction.Password -> PasswordSection(state = state, viewModel = viewModel, onSubmit = { confirmPassword = true })
+                            ProfileAction.Password -> PasswordSection(
+                                state = state,
+                                viewModel = viewModel,
+                                firstFieldFocusRequester = passwordFocusRequester,
+                                modifier = Modifier
+                                    .bringIntoViewRequester(passwordRequester)
+                                    .border(2.dp, FigmaGold, RoundedCornerShape(20.dp)),
+                                onSubmit = {
+                                    keyboardController?.hide()
+                                    confirmPassword = true
+                                }
+                            )
                             null -> Unit
                         }
                         if (state.pendingPhoto != null) {
@@ -325,18 +385,19 @@ private fun PersonalDataCard(profile: MobileProfile) {
 
 @Composable
 private fun ProfileActionsCard(
+    openAction: ProfileAction?,
     onEditProfile: () -> Unit,
     onChangePassword: () -> Unit
 ) {
     InstitutionalCard(modifier = Modifier.fillMaxWidth()) {
         SectionHeader("Acciones", "Administra tu información de afiliado")
         PrimaryButton(
-            text = "Editar Perfil",
+            text = if (openAction == ProfileAction.Edit) "Cerrar edición" else "Editar Perfil",
             onClick = onEditProfile,
             modifier = Modifier.fillMaxWidth()
         )
         SecondaryButton(
-            text = "Cambiar Contraseña",
+            text = if (openAction == ProfileAction.Password) "Cerrar contraseña" else "Cambiar Contraseña",
             onClick = onChangePassword,
             modifier = Modifier.fillMaxWidth()
         )
@@ -406,10 +467,22 @@ private fun ProtectedDataCard(profile: MobileProfile) {
 }
 
 @Composable
-private fun EditableProfileCard(state: ProfileUiState, viewModel: ProfileViewModel) {
-    InstitutionalCard(modifier = Modifier.fillMaxWidth()) {
-            SectionHeader(stringResource(R.string.profile_editable), "Actualiza solo los campos permitidos")
-            Field("phone", stringResource(R.string.register_phone), state.form.phone, state.fieldErrors, KeyboardType.Phone) { viewModel.updateForm { copy(phone = it) } }
+private fun EditableProfileCard(
+    state: ProfileUiState,
+    viewModel: ProfileViewModel,
+    firstFieldFocusRequester: FocusRequester,
+    modifier: Modifier = Modifier
+) {
+    InstitutionalCard(modifier = modifier.fillMaxWidth()) {
+            SectionHeader("Editar perfil", "Actualiza solo los campos permitidos")
+            Field(
+                "phone",
+                stringResource(R.string.register_phone),
+                state.form.phone,
+                state.fieldErrors,
+                KeyboardType.Phone,
+                modifier = Modifier.focusRequester(firstFieldFocusRequester)
+            ) { viewModel.updateForm { copy(phone = it) } }
             Field("email", stringResource(R.string.login_email), state.form.email, state.fieldErrors, KeyboardType.Email) { viewModel.updateForm { copy(email = it) } }
             Field("address", stringResource(R.string.register_address), state.form.address, state.fieldErrors, humanText = true) { viewModel.updateForm { copy(address = it) } }
             BirthDateField(state = state, viewModel = viewModel)
@@ -445,7 +518,9 @@ private fun MaritalStatusField(state: ProfileUiState, viewModel: ProfileViewMode
             label = { Text(stringResource(R.string.register_marital_status)) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             isError = state.fieldErrors.containsKey("marital_status"),
-            supportingText = { state.fieldErrors["marital_status"]?.let { Text(it) } }
+            supportingText = { state.fieldErrors["marital_status"]?.let { Text(it) } },
+            shape = SiafcoTextFieldShape,
+            colors = siafcoOutlinedTextFieldColors()
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { option ->
@@ -493,10 +568,22 @@ private fun formatPhotoSize(sizeBytes: Long): String {
 }
 
 @Composable
-private fun PasswordSection(state: ProfileUiState, viewModel: ProfileViewModel, onSubmit: () -> Unit) {
-    InstitutionalCard(modifier = Modifier.fillMaxWidth()) {
-            SectionHeader(stringResource(R.string.profile_security), stringResource(R.string.profile_password_help))
-            PasswordField("current_password", stringResource(R.string.profile_current_password), state.passwordForm.currentPassword, state) {
+private fun PasswordSection(
+    state: ProfileUiState,
+    viewModel: ProfileViewModel,
+    firstFieldFocusRequester: FocusRequester,
+    modifier: Modifier = Modifier,
+    onSubmit: () -> Unit
+) {
+    InstitutionalCard(modifier = modifier.fillMaxWidth()) {
+            SectionHeader("Cambiar contraseña", stringResource(R.string.profile_password_help))
+            PasswordField(
+                "current_password",
+                stringResource(R.string.profile_current_password),
+                state.passwordForm.currentPassword,
+                state,
+                modifier = Modifier.focusRequester(firstFieldFocusRequester)
+            ) {
                 viewModel.updatePasswordForm { copy(currentPassword = it) }
             }
             PasswordField("password", stringResource(R.string.profile_new_password), state.passwordForm.password, state) {
@@ -518,13 +605,14 @@ private fun Field(
     errors: Map<String, String>,
     keyboardType: KeyboardType = KeyboardType.Text,
     humanText: Boolean = false,
+    modifier: Modifier = Modifier,
     onChange: (String) -> Unit
 ) {
     NormalizedTextField(
         value = value,
         onValueChange = onChange,
         label = { Text(label) },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         isError = errors.containsKey(field),
         supportingText = { errors[field]?.let { Text(it) } },
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
@@ -533,16 +621,25 @@ private fun Field(
 }
 
 @Composable
-private fun PasswordField(field: String, label: String, value: String, state: ProfileUiState, onChange: (String) -> Unit) {
+private fun PasswordField(
+    field: String,
+    label: String,
+    value: String,
+    state: ProfileUiState,
+    modifier: Modifier = Modifier,
+    onChange: (String) -> Unit
+) {
     OutlinedTextField(
         value = value,
         onValueChange = onChange,
         label = { Text(label) },
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         visualTransformation = if (state.passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
         isError = state.passwordErrors.containsKey(field),
         supportingText = { state.passwordErrors[field]?.let { Text(it) } },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+        shape = SiafcoTextFieldShape,
+        colors = siafcoOutlinedTextFieldColors()
     )
 }
 

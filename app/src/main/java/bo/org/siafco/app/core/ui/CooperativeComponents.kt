@@ -32,8 +32,8 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -68,6 +68,36 @@ object CooperativeSpacing {
     val lg = 24.dp
     val xl = 32.dp
 }
+
+val SiafcoTextFieldShape = RoundedCornerShape(16.dp)
+
+@Composable
+fun siafcoOutlinedTextFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedTextColor = CooperativeTextPrimary,
+    unfocusedTextColor = CooperativeTextPrimary,
+    disabledTextColor = CooperativeTextSecondary,
+    errorTextColor = CooperativeTextPrimary,
+    focusedContainerColor = Color.White,
+    unfocusedContainerColor = Color(0xFFFAFBFD),
+    disabledContainerColor = Color(0xFFE8EDF3),
+    errorContainerColor = Color.White,
+    focusedBorderColor = FigmaGold,
+    unfocusedBorderColor = Color(0xFF5B708A),
+    disabledBorderColor = Color(0xFFB8C2D0),
+    errorBorderColor = CooperativeError,
+    focusedLabelColor = FigmaNavy,
+    unfocusedLabelColor = Color(0xFF4C5F75),
+    disabledLabelColor = CooperativeTextSecondary,
+    errorLabelColor = CooperativeError,
+    cursorColor = FigmaNavy,
+    errorCursorColor = CooperativeError,
+    focusedPlaceholderColor = Color(0xFF667085),
+    unfocusedPlaceholderColor = Color(0xFF667085),
+    disabledPlaceholderColor = Color(0xFF8A94A3),
+    focusedSupportingTextColor = CooperativeTextSecondary,
+    unfocusedSupportingTextColor = CooperativeTextSecondary,
+    errorSupportingTextColor = CooperativeError
+)
 
 @Composable
 fun FigmaBrandRow(
@@ -194,19 +224,8 @@ fun FigmaTextField(
         visualTransformation = visualTransformation,
         leadingIcon = leadingIcon,
         trailingIcon = trailingIcon,
-        shape = RoundedCornerShape(22.dp),
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = FigmaInputBackground,
-            unfocusedContainerColor = FigmaInputBackground,
-            disabledContainerColor = Color(0xFFE9EDF3),
-            errorContainerColor = FigmaInputBackground,
-            focusedIndicatorColor = FigmaGold,
-            unfocusedIndicatorColor = FigmaNavy,
-            errorIndicatorColor = CooperativeError,
-            focusedLabelColor = FigmaMuted,
-            unfocusedLabelColor = FigmaMuted,
-            cursorColor = FigmaNavy
-        )
+        shape = SiafcoTextFieldShape,
+        colors = siafcoOutlinedTextFieldColors()
     )
 }
 
@@ -541,7 +560,9 @@ fun SecureTextField(
         keyboardOptions = keyboardOptions,
         visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
         supportingText = supportingText,
-        trailingIcon = trailingIcon
+        trailingIcon = trailingIcon,
+        shape = SiafcoTextFieldShape,
+        colors = siafcoOutlinedTextFieldColors()
     )
 }
 

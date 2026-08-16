@@ -52,6 +52,8 @@ fun NormalizedTextField(
         isError = isError,
         supportingText = supportingText,
         singleLine = singleLine,
-        keyboardOptions = normalizedKeyboardOptions
+        keyboardOptions = normalizedKeyboardOptions,
+        shape = SiafcoTextFieldShape,
+        colors = siafcoOutlinedTextFieldColors()
     )
 }

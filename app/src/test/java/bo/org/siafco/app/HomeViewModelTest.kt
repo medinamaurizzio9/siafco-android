@@ -351,12 +351,30 @@ class HomeViewModelTest {
         assertEquals(1, store.ordersCalls)
     }
 
+    @Test
+    fun logoutMarksSessionAsClosedFromHome() = runTest(dispatcher) {
+        val gateway = FakeAuthGateway(
+            profileResult = ApiResult.Success(activeProfile()),
+            requestResults = mutableListOf(ApiResult.Success(requestSummary()))
+        )
+        val viewModel = viewModel(gateway)
+
+        viewModel.logout()
+        advanceUntilIdle()
+
+        assertEquals(1, gateway.logoutCalls)
+        assertTrue(viewModel.state.value.loggedOut)
+        assertFalse(viewModel.state.value.loading)
+    }
+
     private class FakeAuthGateway(
         private val profileResult: ApiResult<SessionProfile>,
-        private val requestResults: MutableList<ApiResult<AffiliationRequestSummary>>
+        private val requestResults: MutableList<ApiResult<AffiliationRequestSummary>>,
+        private val logoutResult: ApiResult<Unit> = ApiResult.Success(Unit)
     ) : AuthGateway {
         var validateCalls = 0
         var requestCalls = 0
+        var logoutCalls = 0
         var clearLocalSessionCalled = false
 
         val token: Flow<String?> = emptyFlow()
@@ -375,7 +393,10 @@ class HomeViewModelTest {
             return requestResults.removeFirst()
         }
 
-        override suspend fun logout(): ApiResult<Unit> = ApiResult.Success(Unit)
+        override suspend fun logout(): ApiResult<Unit> {
+            logoutCalls++
+            return logoutResult
+        }
 
         override suspend fun clearLocalSession() {
             clearLocalSessionCalled = true

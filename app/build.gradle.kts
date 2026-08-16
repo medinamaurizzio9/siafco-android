@@ -9,6 +9,12 @@ plugins {
 
 val releaseBaseUrlProvider = providers.gradleProperty("SIAFCO_API_BASE_URL")
     .orElse(providers.environmentVariable("SIAFCO_API_BASE_URL"))
+val releaseKeystorePathProvider = providers.environmentVariable("SIAFCO_KEYSTORE_PATH")
+val releaseKeystorePasswordProvider = providers.environmentVariable("SIAFCO_KEYSTORE_PASSWORD")
+val releaseKeyAliasProvider = providers.environmentVariable("SIAFCO_KEY_ALIAS")
+val releaseKeyPasswordProvider = providers.environmentVariable("SIAFCO_KEY_PASSWORD")
+
+fun Provider<String>.blankOrNull(): String? = orNull?.takeIf { it.isNotBlank() }
 
 gradle.taskGraph.whenReady {
     val buildsRelease = allTasks.any { task ->
@@ -16,12 +22,29 @@ gradle.taskGraph.whenReady {
             task.name.contains("Release", ignoreCase = true)
     }
     if (buildsRelease) {
+        val errors = mutableListOf<String>()
         val url = releaseBaseUrlProvider.orNull
         if (url.isNullOrBlank()) {
-            throw GradleException("Release requiere SIAFCO_API_BASE_URL por propiedad Gradle o variable de entorno.")
+            errors += "Release requiere SIAFCO_API_BASE_URL por propiedad Gradle o variable de entorno."
+        } else if (!url.startsWith("https://")) {
+            errors += "Release requiere SIAFCO_API_BASE_URL con HTTPS."
         }
-        if (!url.startsWith("https://")) {
-            throw GradleException("Release requiere SIAFCO_API_BASE_URL con HTTPS.")
+
+        val missingSigningVariables = listOf(
+            "SIAFCO_KEYSTORE_PATH" to releaseKeystorePathProvider,
+            "SIAFCO_KEYSTORE_PASSWORD" to releaseKeystorePasswordProvider,
+            "SIAFCO_KEY_ALIAS" to releaseKeyAliasProvider,
+            "SIAFCO_KEY_PASSWORD" to releaseKeyPasswordProvider
+        ).mapNotNull { (name, provider) ->
+            name.takeIf { provider.blankOrNull() == null }
+        }
+
+        if (missingSigningVariables.isNotEmpty()) {
+            errors += "Release requiere configuración de firma: faltan ${missingSigningVariables.joinToString(", ")}."
+        }
+
+        if (errors.isNotEmpty()) {
+            throw GradleException(errors.joinToString(separator = System.lineSeparator()))
         }
     }
 }
@@ -43,6 +66,15 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            releaseKeystorePathProvider.blankOrNull()?.let { storeFile = file(it) }
+            releaseKeystorePasswordProvider.blankOrNull()?.let { storePassword = it }
+            releaseKeyAliasProvider.blankOrNull()?.let { keyAlias = it }
+            releaseKeyPasswordProvider.blankOrNull()?.let { keyPassword = it }
+        }
+    }
+
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
@@ -53,9 +85,22 @@ android {
         }
         release {
             isMinifyEnabled = false
-            buildConfigField("String", "BASE_URL", "\"${releaseBaseUrlProvider.orNull.orEmpty()}\"")
-            buildConfigField("Boolean", "ENABLE_NETWORK_LOGGING", "false")
+            signingConfig = signingConfigs.getByName("release")
+
+            buildConfigField(
+                "String",
+                "BASE_URL",
+                "\"${releaseBaseUrlProvider.orNull.orEmpty()}\""
+            )
+
+            buildConfigField(
+                "Boolean",
+                "ENABLE_NETWORK_LOGGING",
+                "false"
+            )
+
             manifestPlaceholders["usesCleartextTraffic"] = "false"
+
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

@@ -21,14 +21,20 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -83,6 +89,30 @@ fun HomeScreen(
     LaunchedEffect(state.loggedOut) {
         if (state.loggedOut) onLoggedOut()
     }
+    var confirmLogout by remember { mutableStateOf(false) }
+    if (confirmLogout) {
+        AlertDialog(
+            onDismissRequest = { confirmLogout = false },
+            title = { Text(stringResource(R.string.store_logout_confirm_title), fontWeight = FontWeight.Black) },
+            text = { Text(stringResource(R.string.store_logout_confirm_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmLogout = false
+                        viewModel.logout()
+                    },
+                    enabled = !state.loading
+                ) {
+                    Text(stringResource(R.string.home_logout))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmLogout = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
 
     val profile = state.profile
     val activeAffiliate = profile?.affiliateStatus == "activo" && profile.accessLevel == AccessLevel.Active
@@ -106,7 +136,13 @@ fun HomeScreen(
                     LoadingSkeleton(message = "Validando tu sesión", modifier = Modifier.padding(32.dp))
                     return@Column
                 }
-                profile?.let { HomeHero(it) }
+                profile?.let {
+                    HomeHero(
+                        profile = it,
+                        loggingOut = state.loading,
+                        onRequestLogout = { confirmLogout = true }
+                    )
+                }
                 Column(
                     modifier = Modifier
                         .padding(horizontal = 22.dp)
@@ -139,7 +175,11 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HomeHero(profile: SessionProfile) {
+private fun HomeHero(
+    profile: SessionProfile,
+    loggingOut: Boolean,
+    onRequestLogout: () -> Unit
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -178,6 +218,7 @@ private fun HomeHero(profile: SessionProfile) {
                         Text("Tierra Bendita", color = CooperativeSurface.copy(alpha = 0.86f), style = MaterialTheme.typography.titleMedium)
                     }
                 }
+                HomeLogoutButton(loggingOut = loggingOut, onClick = onRequestLogout)
             }
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -220,6 +261,31 @@ private fun HomeHero(profile: SessionProfile) {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun HomeLogoutButton(loggingOut: Boolean, onClick: () -> Unit) {
+    OutlinedButton(
+        onClick = onClick,
+        enabled = !loggingOut,
+        shape = RoundedCornerShape(999.dp),
+        border = BorderStroke(1.5.dp, FigmaGold),
+        modifier = Modifier.height(48.dp)
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_store_logout),
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+            tint = FigmaGold
+        )
+        Text(
+            text = stringResource(R.string.home_logout),
+            modifier = Modifier.padding(start = 8.dp),
+            color = FigmaGold,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Black
+        )
     }
 }
 
@@ -355,13 +421,35 @@ private fun ServicesSection(
     onOpenStore: () -> Unit,
     onOpenStoreOrders: () -> Unit
 ) {
-    val services = buildList {
-        if (canViewProfile) add(HomeService(R.drawable.ic_nav_profile, stringResource(R.string.home_profile), onOpenProfile))
-        if (canViewCredential) add(HomeService(R.drawable.ic_nav_credential, stringResource(R.string.home_credential), onOpenCredential))
-        if (canViewRequest) add(HomeService(R.drawable.ic_service_request, stringResource(R.string.home_request), onOpenAffiliationRequest))
-        if (activeAffiliate) {
-            add(HomeService(R.drawable.ic_nav_store, stringResource(R.string.home_store), onOpenStore))
-            add(HomeService(R.drawable.ic_nav_orders, stringResource(R.string.home_store_orders), onOpenStoreOrders))
+    val profileTitle = stringResource(R.string.home_profile)
+    val credentialTitle = stringResource(R.string.home_credential)
+    val requestTitle = stringResource(R.string.home_request)
+    val storeTitle = stringResource(R.string.home_store)
+    val ordersTitle = stringResource(R.string.home_store_orders)
+    val services = remember(
+        activeAffiliate,
+        canViewProfile,
+        canViewRequest,
+        canViewCredential,
+        profileTitle,
+        credentialTitle,
+        requestTitle,
+        storeTitle,
+        ordersTitle,
+        onOpenProfile,
+        onOpenAffiliationRequest,
+        onOpenCredential,
+        onOpenStore,
+        onOpenStoreOrders
+    ) {
+        buildList {
+            if (canViewProfile) add(HomeService(R.drawable.ic_nav_profile, profileTitle, onOpenProfile))
+            if (canViewCredential) add(HomeService(R.drawable.ic_nav_credential, credentialTitle, onOpenCredential))
+            if (canViewRequest) add(HomeService(R.drawable.ic_service_request, requestTitle, onOpenAffiliationRequest))
+            if (activeAffiliate) {
+                add(HomeService(R.drawable.ic_nav_store, storeTitle, onOpenStore))
+                add(HomeService(R.drawable.ic_nav_orders, ordersTitle, onOpenStoreOrders))
+            }
         }
     }
     Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {

@@ -4,18 +4,13 @@ import android.app.DatePickerDialog
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.shape.RoundedCornerShape
 import bo.org.siafco.app.R
 import java.time.LocalDate
 import java.util.Locale
@@ -65,19 +60,8 @@ fun FigmaDateField(
                 )
             }
         },
-        shape = RoundedCornerShape(22.dp),
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = Color.White,
-            unfocusedContainerColor = Color.White,
-            disabledContainerColor = Color(0xFFE9EDF3),
-            errorContainerColor = Color.White,
-            focusedIndicatorColor = FigmaGold,
-            unfocusedIndicatorColor = FigmaGold,
-            errorIndicatorColor = MaterialTheme.colorScheme.error,
-            focusedLabelColor = FigmaMuted,
-            unfocusedLabelColor = FigmaMuted,
-            cursorColor = FigmaNavy
-        )
+        shape = SiafcoTextFieldShape,
+        colors = siafcoOutlinedTextFieldColors()
     )
 }
 
